@@ -1,0 +1,13 @@
+[Unit]
+Description=Mint OS Flatpak Flathub Setup
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=!/etc/mint-flatpak-configured
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c "flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo && touch /etc/mint-flatpak-configured"
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
