@@ -1,0 +1,24 @@
+# Build outputs
+mint-arch-linux/output/
+mint-arch-linux/work/
+mint-arch-linux/build-logs/
+*.iso
+*.iso.sha256
+*.iso.md5
+
+# Desktop data
+mint-arch-data/
+
+# Docker
+.docker/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
