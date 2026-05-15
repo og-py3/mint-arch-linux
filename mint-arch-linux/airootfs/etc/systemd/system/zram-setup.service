@@ -1,0 +1,12 @@
+[Unit]
+Description=Mint OS zram Setup
+DefaultDependencies=no
+Before=swap.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/mint-zram-init
+
+[Install]
+WantedBy=multi-user.target
