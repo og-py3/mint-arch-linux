@@ -1,0 +1,25 @@
+
+  ███╗   ███╗██╗███╗   ██╗████████╗      █████╗ ██████╗  ██████╗██╗  ██╗
+  ████╗ ████║██║████╗  ██║╚══██╔══╝     ██╔══██╗██╔══██╗██╔════╝██║  ██║
+  ██╔████╔██║██║██╔██╗ ██║   ██║        ███████║██████╔╝██║     ███████║
+  ██║╚██╔╝██║██║██║╚██╗██║   ██║        ██╔══██║██╔══██╗██║     ██╔══██║
+  ██║ ╚═╝ ██║██║██║ ╚████║   ██║        ██║  ██║██║  ██║╚██████╗██║  ██║
+  ╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝   ╚═╝        ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝
+                                                            L I N U X
+
+  Mint Arch Linux — Rolling Arch Linux with Security Tools + KDE Plasma
+  ───────────────────────────────────────────────────────────────────────
+
+  Quick commands:
+    mint-installer      — Install Mint Arch Linux to disk
+    mint-tools-setup    — Install security tool categories
+    mint-update         — Safe system update (with snapshot)
+    mint-hardware       — Auto-detect & install GPU/CPU drivers
+    mint-privacy        — Privacy & firewall hardening
+    mint-health         — System health dashboard
+    mint-snapshot       — Manage Btrfs snapshots & rollbacks
+    mint-gaming         — Install Steam, Wine, Proton & gaming tweaks
+    mint-setup-aur      — Install paru (AUR helper)
+
+  All tools sourced from official Arch Linux repositories.
+
