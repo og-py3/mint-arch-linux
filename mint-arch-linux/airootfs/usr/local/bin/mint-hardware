@@ -1,0 +1,245 @@
+#!/usr/bin/env bash
+# =============================================================================
+# Mint OS - Hardware Detection & Driver Setup
+# Auto-detects GPU, CPU, and installs optimal drivers
+# =============================================================================
+
+set -euo pipefail
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+BLUE='\033[0;34m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+info()    { echo -e "${GREEN}[+]${NC} $*"; }
+warn()    { echo -e "${YELLOW}[!]${NC} $*"; }
+error()   { echo -e "${RED}[✗]${NC} $*"; exit 1; }
+section() { echo -e "\n${BOLD}${BLUE}── $* ──${NC}\n"; }
+ok()      { echo -e "${GREEN}[✓]${NC} $*"; }
+
+check_root() {
+    [[ "$EUID" -eq 0 ]] || error "Run as root: sudo mint-hardware"
+}
+
+banner() {
+    echo -e "${CYAN}${BOLD}"
+    echo "  Mint OS Hardware Detection & Driver Setup"
+    echo -e "${NC}"
+}
+
+detect_gpu() {
+    section "GPU Detection"
+
+    local gpu_info
+    gpu_info=$(lspci | grep -i 'vga\|3d\|display' 2>/dev/null || echo "Unknown")
+    info "Detected GPU(s):"
+    echo "$gpu_info" | while read -r line; do
+        echo "    $line"
+    done
+    echo ""
+
+    GPU_TYPE="unknown"
+
+    if echo "$gpu_info" | grep -qi "nvidia"; then
+        GPU_TYPE="nvidia"
+    elif echo "$gpu_info" | grep -qi "amd\|radeon\|ati"; then
+        GPU_TYPE="amd"
+    elif echo "$gpu_info" | grep -qi "intel"; then
+        GPU_TYPE="intel"
+    elif echo "$gpu_info" | grep -qi "vmware\|svga"; then
+        GPU_TYPE="vmware"
+    elif echo "$gpu_info" | grep -qi "virtualbox\|vbox"; then
+        GPU_TYPE="virtualbox"
+    elif echo "$gpu_info" | grep -qi "qxl\|virtio"; then
+        GPU_TYPE="qemu"
+    fi
+
+    info "GPU type identified: ${BOLD}$GPU_TYPE${NC}"
+}
+
+install_gpu_drivers() {
+    section "Installing GPU Drivers"
+
+    case "$GPU_TYPE" in
+        nvidia)
+            info "Installing NVIDIA drivers..."
+            echo ""
+            echo "  1) nvidia-open (recommended for RTX 16xx+)"
+            echo "  2) nvidia (proprietary, all cards)"
+            echo "  3) nouveau (open source, basic)"
+            echo ""
+            read -r -p "  Driver choice [1]: " choice
+            choice="${choice:-1}"
+
+            case "$choice" in
+                1)
+                    pacman -S --needed --noconfirm nvidia-open-dkms nvidia-utils lib32-nvidia-utils nvidia-settings
+                    ;;
+                2)
+                    pacman -S --needed --noconfirm nvidia nvidia-utils lib32-nvidia-utils nvidia-settings
+                    ;;
+                3)
+                    pacman -S --needed --noconfirm xf86-video-nouveau mesa lib32-mesa
+                    ;;
+            esac
+
+            info "Enabling DRM kernel mode setting..."
+            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/GRUB_CMDLINE_LINUX_DEFAULT="nvidia_drm.modeset=1 /' \
+                /etc/default/grub 2>/dev/null || true
+            ;;
+
+        amd)
+            info "Installing AMD drivers..."
+            pacman -S --needed --noconfirm \
+                xf86-video-amdgpu mesa lib32-mesa \
+                vulkan-radeon lib32-vulkan-radeon \
+                libva-mesa-driver lib32-libva-mesa-driver \
+                mesa-vdpau lib32-mesa-vdpau
+            ok "AMD drivers installed (AMDGPU + Vulkan + VA-API)"
+            ;;
+
+        intel)
+            info "Installing Intel drivers..."
+            pacman -S --needed --noconfirm \
+                xf86-video-intel mesa lib32-mesa \
+                vulkan-intel lib32-vulkan-intel \
+                intel-media-driver libva-intel-driver
+            ok "Intel drivers installed (modesetting + Vulkan + VA-API)"
+            ;;
+
+        vmware)
+            info "Installing VMware guest drivers..."
+            pacman -S --needed --noconfirm \
+                xf86-video-vmware open-vm-tools gtkmm3
+            systemctl enable vmtoolsd
+            systemctl enable vmware-vmblock-fuse
+            ok "VMware guest tools installed"
+            ;;
+
+        virtualbox)
+            info "Installing VirtualBox guest additions..."
+            pacman -S --needed --noconfirm virtualbox-guest-utils
+            systemctl enable vboxservice
+            ok "VirtualBox guest additions installed"
+            ;;
+
+        qemu)
+            info "Installing QEMU/SPICE guest drivers..."
+            pacman -S --needed --noconfirm \
+                xf86-video-qxl spice-vdagent qemu-guest-agent
+            systemctl enable spice-vdagentd
+            systemctl enable qemu-guest-agent
+            ok "QEMU/SPICE guest tools installed"
+            ;;
+
+        *)
+            warn "GPU not recognized. Installing generic Mesa drivers..."
+            pacman -S --needed --noconfirm mesa lib32-mesa xf86-video-fbdev
+            ;;
+    esac
+}
+
+detect_cpu() {
+    section "CPU Detection"
+
+    local cpu_info
+    cpu_info=$(grep "model name" /proc/cpuinfo | head -1 | cut -d: -f2 | xargs)
+    info "CPU: $cpu_info"
+
+    CPU_VENDOR="unknown"
+    if grep -q "Intel" /proc/cpuinfo; then
+        CPU_VENDOR="intel"
+    elif grep -q "AMD" /proc/cpuinfo; then
+        CPU_VENDOR="amd"
+    fi
+}
+
+install_cpu_microcode() {
+    section "Installing CPU Microcode"
+
+    case "$CPU_VENDOR" in
+        intel)
+            info "Installing Intel microcode..."
+            pacman -S --needed --noconfirm intel-ucode
+            ok "Intel microcode installed (regenerate initramfs to activate)"
+            ;;
+        amd)
+            info "Installing AMD microcode..."
+            pacman -S --needed --noconfirm amd-ucode
+            ok "AMD microcode installed (regenerate initramfs to activate)"
+            ;;
+        *)
+            warn "CPU vendor not identified — skipping microcode"
+            ;;
+    esac
+}
+
+detect_hardware_extras() {
+    section "Detecting Other Hardware"
+
+    # Bluetooth
+    if lsusb 2>/dev/null | grep -qi "bluetooth\|broadcom"; then
+        info "Bluetooth adapter detected"
+        pacman -S --needed --noconfirm bluez bluez-utils
+        systemctl enable bluetooth
+        ok "Bluetooth enabled"
+    fi
+
+    # Touchpad (laptops)
+    if libinput list-devices 2>/dev/null | grep -qi "touchpad"; then
+        info "Touchpad detected"
+        pacman -S --needed --noconfirm libinput xf86-input-libinput
+        ok "Touchpad driver configured"
+    fi
+
+    # Fingerprint reader
+    if lsusb 2>/dev/null | grep -qi "fingerprint\|validity\|synaptics"; then
+        info "Fingerprint reader detected"
+        pacman -S --needed --noconfirm fprintd libfprint
+        ok "Fingerprint reader enabled"
+    fi
+
+    # Printer support
+    info "Ensuring print support..."
+    pacman -S --needed --noconfirm cups cups-pdf hplip
+    systemctl enable cups
+    ok "Print support ready"
+}
+
+regenerate_initramfs() {
+    section "Regenerating Initramfs"
+    info "Running mkinitcpio -P..."
+    mkinitcpio -P
+    ok "Initramfs regenerated"
+
+    if command -v grub-mkconfig &>/dev/null; then
+        info "Updating GRUB config..."
+        grub-mkconfig -o /boot/grub/grub.cfg 2>/dev/null || true
+    fi
+}
+
+show_summary() {
+    section "Hardware Setup Summary"
+    echo -e "  CPU:  ${BOLD}$CPU_VENDOR${NC} — microcode installed"
+    echo -e "  GPU:  ${BOLD}$GPU_TYPE${NC} — drivers installed"
+    echo ""
+    info "Hardware setup complete. Reboot recommended."
+}
+
+main() {
+    banner
+    check_root
+
+    detect_gpu
+    detect_cpu
+    install_gpu_drivers
+    install_cpu_microcode
+    detect_hardware_extras
+    regenerate_initramfs
+    show_summary
+}
+
+main "$@"
