@@ -37,6 +37,7 @@ systemctl enable reflector.timer
 systemctl enable docker 2>/dev/null || true
 systemctl enable paccache.timer
 systemctl enable mint-setup-flatpak.service
+systemctl enable mint-blackarch.service
 
 # --- Configure zsh as default shell ---
 echo "[+] Setting zsh as default shell..."
