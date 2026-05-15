@@ -1,0 +1,36 @@
+# =============================================================================
+# Mint Arch Linux — Calamares Installer Branding
+# =============================================================================
+
+componentName: mintarch
+
+welcomeStyleCalamares: false
+welcomeExpandingLogo: true
+
+strings:
+    productName:         "Mint Arch Linux"
+    shortProductName:    "Mint Arch"
+    version:             "Rolling"
+    shortVersion:        "Rolling"
+    versionedName:       "Mint Arch Linux Rolling"
+    shortVersionedName:  "Mint Arch"
+    bootloaderEntryName: "Mint Arch Linux"
+    productUrl:          "https://github.com/mint-arch-linux"
+    supportUrl:          "https://github.com/mint-arch-linux/issues"
+    knownIssuesUrl:      "https://github.com/mint-arch-linux/issues"
+    releaseNotesUrl:     "https://github.com/mint-arch-linux/releases"
+
+images:
+    productLogo:         "logo.png"
+    productIcon:         "logo.png"
+    productWelcome:     "welcome.png"
+
+slideshow:              "show.qml"
+
+slideshowAPI: 2
+
+style:
+    sidebarBackground:    "#0d160d"
+    sidebarText:          "#c8d8c8"
+    sidebarTextSelect:    "#ffffff"
+    sidebarTextHighlight: "#2ecb71"
