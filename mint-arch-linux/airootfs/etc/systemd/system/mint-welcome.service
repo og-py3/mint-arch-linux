@@ -1,0 +1,14 @@
+[Unit]
+Description=Mint OS Welcome Wizard (first run)
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/mint-welcome
+StandardInput=tty
+TTYPath=/dev/tty2
+RemainAfterExit=no
+
+[Install]
+WantedBy=graphical-session.target
