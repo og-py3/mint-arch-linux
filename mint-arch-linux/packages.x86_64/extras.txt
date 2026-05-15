@@ -1,0 +1,107 @@
+# =============================================================================
+# Mint OS - Extra Packages (stability, AUR, gaming-ready)
+# =============================================================================
+
+# ---- Snapshot & Rollback (Stability) ----
+snapper
+snap-pac
+grub-btrfs
+btrfs-assistant
+inotify-tools
+
+# ---- AUR Helper build dependencies ----
+git
+base-devel
+rust
+go
+
+# ---- Flatpak ----
+flatpak
+xdg-desktop-portal
+xdg-desktop-portal-kde
+
+# ---- AppArmor ----
+apparmor
+python-notify2
+python-psutil
+
+# ---- Firewall ----
+ufw
+gufw
+
+# ---- DNS Privacy ----
+dnscrypt-proxy
+
+# ---- Fail2ban ----
+fail2ban
+
+# ---- System monitoring ----
+lm_sensors
+smartmontools
+hdparm
+nvtop
+btop
+bandwhich
+nethogs
+
+# ---- CPU management ----
+cpupower
+thermald
+tlp
+tlp-rdw
+
+# ---- Disk tools ----
+gparted
+gnome-disk-utility
+testdisk
+ddrescue
+
+# ---- Gaming (optional — installed via mint-gaming) ----
+# steam
+# wine
+# lutris
+# mangohud
+# gamemode
+
+# ---- Virtualization ----
+virt-manager
+qemu-full
+libvirt
+dnsmasq
+bridge-utils
+vde2
+
+# ---- Development ----
+code
+neovim
+git
+github-cli
+docker
+docker-compose
+podman
+kubectl
+python-pip
+nodejs
+npm
+
+# ---- Multimedia extras ----
+obs-studio
+kdenlive
+gimp
+inkscape
+blender
+
+# ---- Productivity ----
+thunderbird
+keepassxc
+signal-desktop
+element-desktop
+
+# ---- File manager extras ----
+ark
+filelight
+kfind
+
+# ---- Accessibility ----
+orca
+espeak-ng
