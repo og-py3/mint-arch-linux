@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+# =============================================================================
+# Mint Arch Linux - First Boot Configuration Script
+# Runs once on first boot. No external repo dependencies.
+# =============================================================================
+
+set -euo pipefail
+
+LOG="/var/log/mint-firstboot.log"
+exec > >(tee -a "$LOG") 2>&1
+
+echo "========================================="
+echo "  Mint Arch Linux First Boot Setup"
+echo "  $(date)"
+echo "========================================="
+
+# --- Generate locales ---
+echo "[+] Generating locales..."
+locale-gen
+
+# --- Set timezone if not set ---
+if [ ! -f /etc/localtime ]; then
+    echo "[+] Timezone not set — defaulting to UTC."
+    ln -sf /usr/share/zoneinfo/UTC /etc/localtime
+fi
+hwclock --systohc
+
+# --- Enable essential services ---
+echo "[+] Enabling services..."
+systemctl enable NetworkManager
+systemctl enable bluetooth
+systemctl enable cups
+systemctl enable avahi-daemon
+systemctl enable sddm
+systemctl enable fstrim.timer
+systemctl enable reflector.timer
+systemctl enable docker 2>/dev/null || true
+systemctl enable paccache.timer
+systemctl enable mint-setup-flatpak.service
+
+# --- Configure zsh as default shell ---
+echo "[+] Setting zsh as default shell..."
+chsh -s /usr/bin/zsh root 2>/dev/null || true
+
+# --- Setup mirrors ---
+echo "[+] Updating mirrors with reflector..."
+reflector --latest 20 --sort rate --save /etc/pacman.d/mirrorlist || true
+
+# --- Update package database ---
+echo "[+] Refreshing package database..."
+pacman -Sy --noconfirm || true
+
+# --- Setup AUR helper (paru) as user ---
+echo "[+] Checking for AUR helper..."
+if ! command -v paru &>/dev/null; then
+    echo "    paru not found. Users can install it with: mint-setup-aur"
+fi
+
+# --- Copy Mint Arch Linux logo to expected locations ---
+echo "[+] Setting up Mint Arch Linux branding..."
+if [ -f /usr/share/mint-arch/logo.png ]; then
+    cp /usr/share/mint-arch/logo.png /usr/share/pixmaps/mintarch-logo.png 2>/dev/null || true
+fi
+
+# --- Mark first boot done ---
+touch /etc/mint-configured
+
+echo ""
+echo "========================================="
+echo "  Mint Arch Linux First Boot Complete!"
+echo "========================================="
