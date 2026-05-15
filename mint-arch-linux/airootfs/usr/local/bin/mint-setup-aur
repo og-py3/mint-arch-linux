@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# =============================================================================
+# Mint OS - AUR Helper Setup (paru)
+# Builds and installs paru from source
+# =============================================================================
+
+set -euo pipefail
+
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+info()  { echo -e "${GREEN}[+]${NC} $*"; }
+warn()  { echo -e "${YELLOW}[!]${NC} $*"; }
+error() { echo -e "${RED}[✗]${NC} $*"; exit 1; }
+
+banner() {
+    echo -e "${CYAN}${BOLD}"
+    echo "  Mint OS AUR Helper Setup (paru)"
+    echo -e "${NC}"
+}
+
+main() {
+    banner
+
+    # Must NOT be run as root — paru builds as a regular user
+    if [[ "$EUID" -eq 0 ]]; then
+        error "Do NOT run this as root. Run as your regular user: mint-setup-aur"
+    fi
+
+    if command -v paru &>/dev/null; then
+        info "paru is already installed: $(paru --version)"
+        exit 0
+    fi
+
+    info "Installing build dependencies..."
+    sudo pacman -S --needed --noconfirm git base-devel rust
+
+    info "Cloning paru source..."
+    local tmpdir
+    tmpdir=$(mktemp -d)
+    git clone https://aur.archlinux.org/paru.git "$tmpdir/paru"
+
+    info "Building paru..."
+    cd "$tmpdir/paru"
+    makepkg -si --noconfirm
+
+    cd /
+    rm -rf "$tmpdir"
+
+    if command -v paru &>/dev/null; then
+        echo ""
+        echo -e "${GREEN}${BOLD}paru installed successfully!${NC}"
+        echo ""
+        echo "  Usage:"
+        echo "    paru -S <package>     Install from AUR"
+        echo "    paru -Syu             Update all (including AUR)"
+        echo "    paru -Ss <keyword>    Search AUR"
+        echo ""
+    else
+        error "paru installation failed."
+    fi
+}
+
+main "$@"
