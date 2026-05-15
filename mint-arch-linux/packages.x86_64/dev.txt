@@ -1,0 +1,117 @@
+# =============================================================================
+# Mint OS — Developer Tools
+# =============================================================================
+
+# Version control
+git
+git-lfs
+github-cli
+lazygit
+
+# Languages
+python
+python-pip
+python-virtualenv
+python-poetry
+nodejs
+npm
+rust
+go
+jdk-openjdk
+
+# Build tools
+cmake
+meson
+ninja
+autoconf
+automake
+gcc
+clang
+llvm
+
+# Containers
+docker
+docker-compose
+podman
+podman-compose
+buildah
+skopeo
+
+# Kubernetes
+kubectl
+helm
+k9s
+
+# Editors / IDEs
+neovim
+vim
+emacs-nox
+
+# Terminal productivity
+tmux
+zellij
+fzf
+ripgrep
+fd
+bat
+eza
+delta
+hyperfine
+tokei
+procs
+dust
+
+# Network dev tools
+curl
+httpie
+ngrep
+mitmproxy
+socat
+netcat
+
+# Debugging
+gdb
+valgrind
+strace
+ltrace
+perf
+
+# Database clients
+postgresql
+mariadb-clients
+redis
+sqlite
+
+# API / HTTP
+jq
+yq
+
+# Android
+android-tools
+adb
+fastboot
+
+# SSH / Remote
+openssh
+sshfs
+mosh
+autossh
+
+# Virtualization
+qemu-full
+libvirt
+virt-manager
+bridge-utils
+dnsmasq
+
+# Documentation
+pandoc
+texlive-core
+
+# Misc dev utilities
+make
+patch
+pkgconf
+difftastic
+ncdu
+lsof
