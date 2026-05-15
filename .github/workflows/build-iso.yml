@@ -1,0 +1,115 @@
+name: Build Mint Arch Linux ISO
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags:
+      - 'v*'
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: 'Release channel'
+        required: true
+        default: 'stable'
+        type: choice
+        options: [ stable, beta, nightly ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build ISO (${{ github.event.inputs.channel || 'stable' }})
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+      options: --privileged
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Determine channel
+        id: channel
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "name=nightly" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "name=${{ github.event.inputs.channel }}" >> $GITHUB_OUTPUT
+          elif echo "${{ github.ref }}" | grep -q "refs/tags/"; then
+            echo "name=stable" >> $GITHUB_OUTPUT
+          else
+            echo "name=beta" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install archiso
+        run: |
+          pacman -Sy --noconfirm archlinux-keyring
+          pacman -Su --noconfirm
+          pacman -S --noconfirm --needed \
+            archiso dosfstools e2fsprogs libisoburn \
+            squashfs-tools mtools grub efibootmgr \
+            syslinux curl wget imagemagick plymouth
+
+      - name: Set permissions
+        working-directory: mint-arch-linux
+        run: |
+          chmod +x build.sh
+          chmod +x airootfs/usr/local/bin/mint-* 2>/dev/null || true
+          chmod 440 airootfs/etc/sudoers.d/mintarch 2>/dev/null || true
+
+      - name: Build ISO
+        working-directory: mint-arch-linux
+        run: ./build.sh --output /tmp/output
+        env:
+          OUT_DIR: /tmp/output
+          CHANNEL: ${{ steps.channel.outputs.name }}
+
+      - name: Get ISO info
+        id: iso
+        run: |
+          ISO=$(ls /tmp/output/mintarch-*.iso 2>/dev/null | head -1)
+          echo "path=$ISO" >> $GITHUB_OUTPUT
+          echo "name=$(basename $ISO)" >> $GITHUB_OUTPUT
+          echo "size=$(du -sh $ISO | cut -f1)" >> $GITHUB_OUTPUT
+          echo "sha256=$(sha256sum $ISO | cut -d' ' -f1)" >> $GITHUB_OUTPUT
+
+      - name: Upload ISO
+        uses: actions/upload-artifact@v4
+        with:
+          name: mintarch-${{ steps.channel.outputs.name }}-iso
+          path: /tmp/output/mintarch-*.iso
+          retention-days: 14
+
+      - name: Create GitHub Release (on tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Mint Arch Linux ${{ github.ref_name }}
+          draft: false
+          prerelease: ${{ steps.channel.outputs.name != 'stable' }}
+          body: |
+            ## Mint Arch Linux ${{ github.ref_name }}
+
+            **Rolling Arch Linux — KDE Plasma 6 + Security Tools**
+
+            | Property | Value |
+            |---|---|
+            | Channel | ${{ steps.channel.outputs.name }} |
+            | Size | ${{ steps.iso.outputs.size }} |
+            | SHA256 | `${{ steps.iso.outputs.sha256 }}` |
+
+            ### Flash to USB
+            ```bash
+            sudo dd if=mintarch-*.iso of=/dev/sdX bs=4M status=progress oflag=sync
+            ```
+            Or use **Rufus**, **Ventoy**, or **balenaEtcher**.
+
+            ### VirtualBox
+            New VM → Arch Linux 64-bit → Enable EFI → Attach ISO → Boot → `sudo mint-installer`
+          files: /tmp/output/mintarch-*.iso
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
