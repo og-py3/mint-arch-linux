@@ -1,0 +1,14 @@
+[Unit]
+Description=Pacman Keyring Init
+Before=pacman.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/pacman-key --init
+ExecStart=/usr/bin/pacman-key --populate archlinux
+ExecStart=/usr/bin/pacman-key --recv-keys 4345771566D76038C7FEB43863EC0ADBEA87E4E7
+ExecStart=/usr/bin/pacman-key --lsign-key 4345771566D76038C7FEB43863EC0ADBEA87E4E7
+
+[Install]
+WantedBy=multi-user.target
