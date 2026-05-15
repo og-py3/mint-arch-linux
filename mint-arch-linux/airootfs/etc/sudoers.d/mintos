@@ -1,0 +1,20 @@
+# Mint Arch Linux — Sudo configuration
+# Wheel group members get full sudo access
+%wheel ALL=(ALL:ALL) ALL
+
+# Allow mint-* tools without password prompt (for usability)
+%wheel ALL=(ALL:ALL) NOPASSWD: /usr/local/bin/mint-update
+%wheel ALL=(ALL:ALL) NOPASSWD: /usr/local/bin/mint-clean
+%wheel ALL=(ALL:ALL) NOPASSWD: /usr/local/bin/mint-health
+%wheel ALL=(ALL:ALL) NOPASSWD: /usr/local/bin/mint-fetch
+%wheel ALL=(ALL:ALL) NOPASSWD: /usr/local/bin/mint-snapshot
+
+# Security hardening — restrict dangerous options
+Defaults timestamp_timeout=15
+Defaults passwd_tries=3
+Defaults log_output
+Defaults!/usr/bin/sudoreplay !log_output
+Defaults env_reset
+Defaults env_keep += "HOME EDITOR VISUAL PAGER"
+Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Defaults requiretty
