@@ -1,0 +1,11 @@
+NAME="Mint Arch Linux"
+PRETTY_NAME="Mint Arch Linux (Rolling)"
+ID=mintarch
+ID_LIKE=arch
+BUILD_ID=rolling
+ANSI_COLOR="1;32"
+HOME_URL="https://github.com/mint-arch-linux"
+DOCUMENTATION_URL="https://github.com/mint-arch-linux/wiki"
+SUPPORT_URL="https://github.com/mint-arch-linux/issues"
+BUG_REPORT_URL="https://github.com/mint-arch-linux/issues"
+LOGO=mintarch-logo
