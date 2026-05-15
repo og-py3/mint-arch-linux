@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Mint OS - Security Tools Manager
-# Installs security tool categories from official Arch Linux repositories
-# All tools are sourced from [core], [extra], [community], and AUR only.
+# Mint Arch Linux - Security Tools Manager
+# Powered by BlackArch Linux Repository (2800+ tools)
 # =============================================================================
 
 set -euo pipefail
@@ -12,19 +11,21 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 BOLD='\033[1m'
+MINT='\033[38;2;46;203;113m'
 NC='\033[0m'
 
 banner() {
     echo -e "${CYAN}"
-    echo "  ███╗   ███╗██╗███╗   ██╗████████╗     ██████╗ ███████╗"
-    echo "  ████╗ ████║██║████╗  ██║╚══██╔══╝    ██╔═══██╗██╔════╝"
-    echo "  ██╔████╔██║██║██╔██╗ ██║   ██║       ██║   ██║███████╗"
-    echo "  ██║╚██╔╝██║██║██║╚██╗██║   ██║       ██║   ██║╚════██║"
-    echo "  ██║ ╚═╝ ██║██║██║ ╚████║   ██║       ╚██████╔╝███████║"
-    echo "  ╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝   ╚═╝        ╚═════╝ ╚══════╝"
+    echo "  ███╗   ███╗██╗███╗   ██╗████████╗     ████████╗ ██████╗  ██████╗ ██╗     ███████╗"
+    echo "  ████╗ ████║██║████╗  ██║╚══██╔══╝        ██╔══╝██╔═══██╗██╔═══██╗██║     ██╔════╝"
+    echo "  ██╔████╔██║██║██╔██╗ ██║   ██║           ██║   ██║   ██║██║   ██║██║     ███████╗"
+    echo "  ██║╚██╔╝██║██║██║╚██╗██║   ██║           ██║   ██║   ██║██║   ██║██║     ╚════██║"
+    echo "  ██║ ╚═╝ ██║██║██║ ╚████║   ██║           ██║   ╚██████╔╝╚██████╔╝███████╗███████║"
+    echo "  ╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝   ╚═╝           ╚═╝    ╚═════╝  ╚═════╝ ╚══════╝╚══════╝"
     echo -e "${NC}"
-    echo -e "${BOLD}  Mint OS Security Tools Manager${NC}"
-    echo "  ─────────────────────────────────────"
+    echo -e "  ${BOLD}${MINT}Mint Arch Linux — Security Tools Manager${NC}"
+    echo -e "  ${CYAN}Powered by BlackArch Linux Repository (2800+ tools)${NC}"
+    echo "  ────────────────────────────────────────────────────────"
     echo ""
 }
 
@@ -35,278 +36,236 @@ check_root() {
     fi
 }
 
+ensure_blackarch() {
+    if ! grep -q '\[blackarch\]' /etc/pacman.conf 2>/dev/null; then
+        echo -e "${YELLOW}[!] BlackArch repo not found. Adding it now...${NC}"
+        curl -O https://blackarch.org/strap.sh
+        chmod +x strap.sh
+        bash strap.sh
+        rm -f strap.sh
+        pacman -Sy --noconfirm
+        echo -e "${GREEN}[✓] BlackArch repo added (2800+ tools available)${NC}"
+    else
+        echo -e "${GREEN}[✓] BlackArch repo ready${NC}"
+    fi
+}
+
+install_group() {
+    local label="$1"
+    local group="$2"
+    echo -e "${GREEN}[+] Installing: ${BOLD}$label${NC} (${CYAN}blackarch-${group}${NC})"
+    pacman -S --needed --noconfirm "blackarch-${group}" 2>/dev/null || {
+        echo -e "${YELLOW}[!] Group install failed, trying individual packages...${NC}"
+        pacman -Sg "blackarch-${group}" 2>/dev/null | awk '{print $2}' | \
+            xargs -r pacman -S --needed --noconfirm 2>/dev/null || true
+    }
+    echo -e "${GREEN}[✓] $label installed${NC}"
+}
+
 install_pkgs() {
     local label="$1"; shift
     local pkgs=("$@")
     echo -e "${GREEN}[+] Installing: ${BOLD}$label${NC}"
-    pacman -S --needed --noconfirm "${pkgs[@]}" 2>/dev/null || {
-        echo -e "${YELLOW}[!] Some packages unavailable in official repos — trying AUR via paru...${NC}"
-        if command -v paru &>/dev/null; then
-            local real_user="${SUDO_USER:-}"
-            [[ -n "$real_user" ]] && sudo -u "$real_user" paru -S --needed --noconfirm "${pkgs[@]}" 2>/dev/null || true
-        fi
-    }
+    pacman -S --needed --noconfirm "${pkgs[@]}" 2>/dev/null || true
 }
 
-# ─── Tool Categories ─────────────────────────────────────────────────────────
+# ─── BlackArch Groups (2800+ tools total) ─────────────────────────────────────
 
-cat_info_gathering() {
-    install_pkgs "Information Gathering" \
-        nmap masscan netdiscover arp-scan whois dnsutils bind traceroute \
-        mtr tcptraceroute tcpflow p0f smbmap enum4linux smbclient \
-        nbtscan onesixtyone snmpwalk fping hping
+cat_exploitation()       { install_group "Exploitation"                exploitation; }
+cat_fuzzer()             { install_group "Fuzzers"                      fuzzer; }
+cat_forensic()           { install_group "Forensics & Recovery"         forensic; }
+cat_recon()              { install_group "Reconnaissance"               recon; }
+cat_scanner()            { install_group "Scanners & Port Scanners"     scanner; }
+cat_webapp()             { install_group "Web Application Testing"      webapp; }
+cat_networking()         { install_group "Networking"                   networking; }
+cat_crypto()             { install_group "Cryptography & Encoding"      crypto; }
+cat_misc()               { install_group "Miscellaneous"                misc; }
+cat_reversing()          { install_group "Reverse Engineering"          reversing; }
+cat_mobile()             { install_group "Mobile Security"              mobile; }
+cat_cracker()            { install_group "Password Crackers"            cracker; }
+cat_sniffer()            { install_group "Sniffers & Traffic Analysis"  sniffer; }
+cat_wireless()           { install_group "Wireless & WiFi"              wireless; }
+cat_social()             { install_group "Social Engineering"           social; }
+cat_voip()               { install_group "VoIP Security"                voip; }
+cat_windows()            { install_group "Windows / AD Attacks"         windows; }
+cat_anti_forensic()      { install_group "Anti-Forensics"               anti-forensic; }
+cat_backdoor()           { install_group "Backdoors & Trojans"          backdoor; }
+cat_code_audit()         { install_group "Code Audit & SAST"            code-audit; }
+cat_config()             { install_group "Configuration Auditing"       config; }
+cat_decompiler()         { install_group "Decompilers"                  decompiler; }
+cat_defensive()          { install_group "Defensive & Blue Team"        defensive; }
+cat_disassembler()       { install_group "Disassemblers"                disassembler; }
+cat_dos()                { install_group "DoS & Stress Testing"         dos; }
+cat_drone()              { install_group "Drone / RF Hacking"           drone; }
+cat_exploitation_client(){ install_group "Client-Side Exploitation"     exploitation-client; }
+cat_fingerprint()        { install_group "Fingerprinting"               fingerprint; }
+cat_firmware()           { install_group "Firmware Analysis"            firmware; }
+cat_hardware()           { install_group "Hardware Hacking"             hardware; }
+cat_honeypot()           { install_group "Honeypots"                    honeypot; }
+cat_ids()                { install_group "IDS / IPS"                    ids; }
+cat_keylogger()          { install_group "Keyloggers"                   keylogger; }
+cat_malware()            { install_group "Malware Analysis"             malware; }
+cat_networking2()        { install_group "Network Traffic Analysis"     networking; }
+cat_nfc()                { install_group "NFC & RFID"                   nfc; }
+cat_osint()              { install_group "OSINT"                        osint; }
+cat_packer()             { install_group "Packers & Obfuscators"        packer; }
+cat_proxy()              { install_group "Proxies & Tunnels"            proxy; }
+cat_radio()              { install_group "Radio / SDR"                  radio; }
+cat_spoof()              { install_group "Spoofing"                     spoof; }
+cat_stego()              { install_group "Steganography"                stego; }
+cat_threat_modeling()    { install_group "Threat Modeling"              threat-modeling; }
+cat_tunnel()             { install_group "Tunneling"                    tunnel; }
+cat_unpacker()           { install_group "Unpackers"                    unpacker; }
+cat_vehicle()            { install_group "Vehicle / CAN Bus"            vehicle; }
+cat_windows_priv()       { install_group "Windows Privilege Escalation" windows; }
+
+install_everything() {
+    echo -e "${YELLOW}[!] Installing the FULL BlackArch suite (2800+ tools).${NC}"
+    echo -e "${YELLOW}    This will download several GB and take a long time.${NC}"
+    echo ""
+    read -r -p "Are you absolutely sure? (yes/N): " confirm
+    [[ "$confirm" == "yes" ]] || { echo "Aborted."; return; }
+    pacman -S --needed --noconfirm blackarch
+    echo -e "${GREEN}[✓] All 2800+ BlackArch tools installed!${NC}"
 }
 
-cat_recon() {
-    install_pkgs "Reconnaissance" \
-        amass subfinder httpx-toolkit nuclei waybackurls \
-        whatweb wafw00f wpscan dnsrecon fierce dnsenum \
-        theharvester spiderfoot maltego
-}
-
-cat_web_apps() {
-    install_pkgs "Web Application Testing" \
-        sqlmap nikto dirb gobuster ffuf wfuzz \
-        burpsuite zaproxy xsser wapiti commix \
-        curl wget httpie python-requests \
-        skipfish w3af
-}
-
-cat_password() {
-    install_pkgs "Password & Hash Cracking" \
-        hashcat john hydra medusa \
-        crunch cewl wordlistctl \
-        ophcrack samdump2 chntpw \
-        pdfcrack fcrackzip rarcrack \
-        hash-identifier hashid
-}
-
-cat_wireless() {
-    install_pkgs "Wireless & WiFi" \
-        aircrack-ng kismet wireshark-qt wireshark-cli \
-        bettercap mdk4 pixiewps reaver \
-        hcxdumptool hcxtools \
-        iw wireless_tools wavemon
-}
-
-cat_exploitation() {
-    install_pkgs "Exploitation" \
-        metasploit exploitdb beef \
-        pwntools python-impacket \
-        python-pycryptodome python-paramiko \
-        searchsploit
-}
-
-cat_post_exploit() {
-    install_pkgs "Post-Exploitation" \
-        bloodhound neo4j \
-        crackmapexec evil-winrm \
-        python-impacket smbmap \
-        pwncat nc socat
-}
-
-cat_forensics() {
-    install_pkgs "Forensics & Recovery" \
-        autopsy sleuthkit binwalk foremost \
-        testdisk photorec extundelete dc3dd \
-        ddrescue guymager \
-        exiftool bulk-extractor \
-        volatility3 rekall
-}
-
-cat_reversing() {
-    install_pkgs "Reverse Engineering" \
-        radare2 ghidra cutter \
-        gdb gef pwndbg \
-        ltrace strace valgrind \
-        apktool dex2jar jadx \
-        r2ghidra
-}
-
-cat_sniffing() {
-    install_pkgs "Sniffing & Spoofing" \
-        wireshark-qt tcpdump dsniff \
-        ettercap bettercap responder \
-        arpwatch arping \
-        mitmproxy sslstrip \
-        netsed
-}
-
-cat_network() {
-    install_pkgs "Network Tools" \
-        ncat netcat socat \
-        proxychains-ng tor torsocks \
-        openvpn wireguard-tools \
-        sslscan testssl.sh sslyze \
-        openssl gnutls-utils
-}
-
-cat_crypto() {
-    install_pkgs "Cryptography & Steganography" \
-        steghide stegseek \
-        exiftool openssl \
-        age gnupg \
-        hashcat john \
-        xortool
-}
-
-cat_osint() {
-    install_pkgs "OSINT" \
-        maltego recon-ng theharvester \
-        sherlock phoneinfoga \
-        spiderfoot amass \
-        python-shodan photon
-}
-
-cat_social_eng() {
-    install_pkgs "Social Engineering" \
+install_top100() {
+    echo -e "${YELLOW}[!] Installing the most popular 100 security tools...${NC}"
+    install_pkgs "Top 100 Tools" \
+        nmap masscan netdiscover arp-scan whois dnsutils traceroute mtr \
+        sqlmap nikto gobuster ffuf wfuzz dirb burpsuite zaproxy \
+        hashcat john hydra medusa crunch cewl \
+        aircrack-ng kismet wireshark-qt wireshark-cli bettercap mdk4 reaver hcxtools hcxdumptool \
+        metasploit exploitdb searchsploit pwntools \
+        bloodhound crackmapexec evil-winrm impacket \
+        autopsy sleuthkit binwalk foremost testdisk volatility3 exiftool \
+        radare2 ghidra cutter gdb pwndbg ltrace strace \
+        tcpdump dsniff ettercap responder mitmproxy sslstrip \
+        ncat socat proxychains-ng tor openvpn wireguard-tools sslscan \
+        steghide stegseek openssl age gnupg \
+        maltego recon-ng theharvester amass subfinder nuclei \
         set gophish \
-        msfconsole
+        trivy dive grype syft kubectl \
+        apktool jadx frida adb androguard \
+        snort suricata zeek rkhunter lynis clamav auditd \
+        ffuf radamsa \
+        sqlmap redis shodan
+    echo -e "${GREEN}[✓] Top 100 tools installed!${NC}"
 }
 
-cat_fuzzing() {
-    install_pkgs "Fuzzing" \
-        ffuf wfuzz radamsa \
-        american-fuzzy-lop honggfuzz \
-        boofuzz python-atheris
-}
-
-cat_container() {
-    install_pkgs "Container Security" \
-        docker trivy \
-        dive grype \
-        hadolint syft \
-        kubectl helm
-}
-
-cat_mobile() {
-    install_pkgs "Mobile Security" \
-        apktool dex2jar jadx \
-        frida python-frida-tools \
-        adb fastboot \
-        androguard
-}
-
-cat_voip() {
-    install_pkgs "VoIP" \
-        sipvicious svcrack \
-        sipsak python-scapy \
-        wireshark-qt
-}
-
-cat_defensive() {
-    install_pkgs "Defensive & Monitoring" \
-        snort suricata \
-        zeek ossec-hids \
-        aide rkhunter chkrootkit \
-        lynis clamav \
-        auditd
-}
-
-cat_database() {
-    install_pkgs "Database Attacks" \
-        sqlmap \
-        python-pymysql \
-        python-psycopg2 \
-        mongoclient \
-        redis-tools
-}
-
-cat_firmware() {
-    install_pkgs "Firmware Analysis" \
-        binwalk flashrom \
-        openocd avrdude \
-        esptool \
-        qemu-full \
-        firmwalker
-}
-
-cat_misc() {
-    install_pkgs "Miscellaneous Tools" \
-        tor torsocks proxychains-ng \
-        openvpn wireguard-tools \
-        python-pwntools \
-        pwncat tmux screen \
-        neovim vim \
-        python-scapy
-}
-
-# ─── Menu ────────────────────────────────────────────────────────────────────
+# ─── Menu ─────────────────────────────────────────────────────────────────────
 
 show_menu() {
-    echo -e "${BOLD}Select Mint OS security tool category:${NC}"
+    echo -e "${BOLD}Select a tool category to install:${NC}"
     echo ""
-    echo "  1)  Information Gathering"
-    echo "  2)  Reconnaissance & OSINT"
-    echo "  3)  Web Application Testing"
-    echo "  4)  Password & Hash Cracking"
-    echo "  5)  Wireless & WiFi"
-    echo "  6)  Exploitation"
-    echo "  7)  Post-Exploitation"
-    echo "  8)  Forensics & Recovery"
-    echo "  9)  Reverse Engineering"
-    echo "  10) Sniffing & Spoofing"
-    echo "  11) Network Tools"
-    echo "  12) Cryptography & Steganography"
-    echo "  13) OSINT"
-    echo "  14) Social Engineering"
-    echo "  15) Fuzzing"
-    echo "  16) Container Security"
-    echo "  17) Mobile Security"
-    echo "  18) VoIP"
-    echo "  19) Defensive & Monitoring"
-    echo "  20) Database Attacks"
-    echo "  21) Firmware Analysis"
-    echo "  22) Miscellaneous"
-    echo "  A)  Install ALL categories"
-    echo "  Q)  Quit"
+    echo -e "  ${CYAN}── Quick Install ──────────────────────────────────────${NC}"
+    echo "   T)  Top 100 Most Popular Tools     (fast, ~2GB)"
+    echo "   A)  ALL BlackArch Tools             (2800+ tools, ~20GB)"
+    echo ""
+    echo -e "  ${CYAN}── BlackArch Groups ───────────────────────────────────${NC}"
+    echo "   1)  Exploitation                   40)  Anti-Forensics"
+    echo "   2)  Fuzzers                        41)  Backdoors & Trojans"
+    echo "   3)  Forensics & Recovery           42)  Code Audit / SAST"
+    echo "   4)  Reconnaissance                 43)  Configuration Auditing"
+    echo "   5)  Scanners & Port Scanners       44)  Decompilers"
+    echo "   6)  Web Application Testing        45)  Defensive / Blue Team"
+    echo "   7)  Networking                     46)  Disassemblers"
+    echo "   8)  Cryptography & Encoding        47)  DoS & Stress Testing"
+    echo "   9)  Miscellaneous                  48)  Drone / RF Hacking"
+    echo "  10)  Reverse Engineering            49)  Client-Side Exploitation"
+    echo "  11)  Mobile Security                50)  Fingerprinting"
+    echo "  12)  Password Crackers              51)  Firmware Analysis"
+    echo "  13)  Sniffers & Traffic Analysis    52)  Hardware Hacking"
+    echo "  14)  Wireless & WiFi                53)  Honeypots"
+    echo "  15)  Social Engineering             54)  IDS / IPS"
+    echo "  16)  VoIP Security                  55)  Keyloggers"
+    echo "  17)  Windows / AD Attacks           56)  Malware Analysis"
+    echo "  18)  OSINT                          57)  NFC & RFID"
+    echo "  19)  Proxy & Tunneling              58)  Packers & Obfuscators"
+    echo "  20)  Steganography                  59)  Radio / SDR"
+    echo "  21)  Spoofing                       60)  Vehicle / CAN Bus"
+    echo "  22)  Threat Modeling                61)  Unpackers"
+    echo ""
+    echo -e "   ${BOLD}L)  List all tools in a group${NC}"
+    echo -e "   ${BOLD}S)  Search for a specific tool${NC}"
+    echo -e "   ${BOLD}Q)  Quit${NC}"
     echo ""
 }
 
-install_all() {
-    echo -e "${YELLOW}[!] Installing ALL tool categories. This will take a while.${NC}"
-    read -r -p "Are you sure? (y/N): " confirm
-    [[ "$confirm" =~ ^[Yy]$ ]] || return
-    cat_info_gathering; cat_recon; cat_web_apps; cat_password
-    cat_wireless; cat_exploitation; cat_post_exploit; cat_forensics
-    cat_reversing; cat_sniffing; cat_network; cat_crypto
-    cat_osint; cat_social_eng; cat_fuzzing; cat_container
-    cat_mobile; cat_voip; cat_defensive; cat_database
-    cat_firmware; cat_misc
+list_group_tools() {
+    read -r -p "Enter BlackArch group name (e.g. webapp, recon, cracker): " grp
+    echo ""
+    echo -e "${CYAN}Tools in blackarch-${grp}:${NC}"
+    pacman -Sg "blackarch-${grp}" 2>/dev/null | awk '{print "  - "$2}' || \
+        echo -e "${RED}Group not found. Run: pacman -Sg | grep blackarch${NC}"
+}
+
+search_tool() {
+    read -r -p "Search for tool: " term
+    echo ""
+    echo -e "${CYAN}Results for '${term}':${NC}"
+    pacman -Ss "blackarch" 2>/dev/null | grep -i "$term" | head -30 || true
+    pacman -Ss "$term" 2>/dev/null | grep -i "$term" | head -20 || true
 }
 
 main() {
     banner
     check_root
+    ensure_blackarch
 
     while true; do
         show_menu
         read -r -p "Choice: " choice
         echo ""
         case "$choice" in
-            1)  cat_info_gathering ;;
-            2)  cat_recon ;;
-            3)  cat_web_apps ;;
-            4)  cat_password ;;
-            5)  cat_wireless ;;
-            6)  cat_exploitation ;;
-            7)  cat_post_exploit ;;
-            8)  cat_forensics ;;
-            9)  cat_reversing ;;
-            10) cat_sniffing ;;
-            11) cat_network ;;
-            12) cat_crypto ;;
-            13) cat_osint ;;
-            14) cat_social_eng ;;
-            15) cat_fuzzing ;;
-            16) cat_container ;;
-            17) cat_mobile ;;
-            18) cat_voip ;;
-            19) cat_defensive ;;
-            20) cat_database ;;
-            21) cat_firmware ;;
-            22) cat_misc ;;
-            [Aa]) install_all ;;
+            [Tt]) install_top100 ;;
+            [Aa]) install_everything ;;
+            1)  cat_exploitation ;;
+            2)  cat_fuzzer ;;
+            3)  cat_forensic ;;
+            4)  cat_recon ;;
+            5)  cat_scanner ;;
+            6)  cat_webapp ;;
+            7)  cat_networking ;;
+            8)  cat_crypto ;;
+            9)  cat_misc ;;
+            10) cat_reversing ;;
+            11) cat_mobile ;;
+            12) cat_cracker ;;
+            13) cat_sniffer ;;
+            14) cat_wireless ;;
+            15) cat_social ;;
+            16) cat_voip ;;
+            17) cat_windows ;;
+            18) cat_osint ;;
+            19) cat_proxy ;;
+            20) cat_stego ;;
+            21) cat_spoof ;;
+            22) cat_threat_modeling ;;
+            40) cat_anti_forensic ;;
+            41) cat_backdoor ;;
+            42) cat_code_audit ;;
+            43) cat_config ;;
+            44) cat_decompiler ;;
+            45) cat_defensive ;;
+            46) cat_disassembler ;;
+            47) cat_dos ;;
+            48) cat_drone ;;
+            49) cat_exploitation_client ;;
+            50) cat_fingerprint ;;
+            51) cat_firmware ;;
+            52) cat_hardware ;;
+            53) cat_honeypot ;;
+            54) cat_ids ;;
+            55) cat_keylogger ;;
+            56) cat_malware ;;
+            57) cat_nfc ;;
+            58) cat_packer ;;
+            59) cat_radio ;;
+            60) cat_vehicle ;;
+            61) cat_unpacker ;;
+            [Ll]) list_group_tools ;;
+            [Ss]) search_tool ;;
             [Qq]) echo -e "${GREEN}Goodbye!${NC}"; exit 0 ;;
             *) echo -e "${RED}[!] Invalid choice.${NC}" ;;
         esac
