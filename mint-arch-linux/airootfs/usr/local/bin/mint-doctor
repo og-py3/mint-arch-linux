@@ -1,0 +1,286 @@
+#!/usr/bin/env bash
+# =============================================================================
+# Mint OS — mint-doctor  |  Full system diagnostics & auto-fix
+# =============================================================================
+set -euo pipefail
+
+LOG_DIR="/var/log/mint-os"; mkdir -p "$LOG_DIR"
+LOG="$LOG_DIR/mint-doctor-$(date +%Y%m%d-%H%M%S).log"
+
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
+CYAN='\033[0;36m'; BOLD='\033[1m'; NC='\033[0m'
+MINT='\033[38;2;46;203;113m'
+
+pass()    { echo -e "${GREEN}  [PASS]${NC} $*" | tee -a "$LOG"; }
+fail()    { echo -e "${RED}  [FAIL]${NC} $*" | tee -a "$LOG"; FAILURES+=("$*"); }
+warn()    { echo -e "${YELLOW}  [WARN]${NC} $*" | tee -a "$LOG"; WARNINGS+=("$*"); }
+info()    { echo -e "${MINT}  [INFO]${NC} $*" | tee -a "$LOG"; }
+section() { echo -e "\n${BOLD}${CYAN}── $* ──${NC}" | tee -a "$LOG"; }
+fix()     { echo -e "${YELLOW}  [FIX ]${NC} $*" | tee -a "$LOG"; }
+
+FAILURES=()
+WARNINGS=()
+
+banner() {
+    echo -e "${MINT}${BOLD}"
+    echo "  ╔═══════════════════════════════════╗"
+    echo "  ║   Mint OS Doctor — Diagnostics    ║"
+    echo "  ╚═══════════════════════════════════╝${NC}"
+    echo "  Running full system diagnosis..."
+    echo "  Log: $LOG"
+    echo ""
+}
+
+check_internet() {
+    section "Network Connectivity"
+    if curl -s --max-time 5 https://archlinux.org > /dev/null 2>&1; then
+        pass "Internet connection OK"
+    else
+        fail "No internet connectivity"
+        fix "Check: ip link | nmcli device status"
+    fi
+
+    if curl -s --max-time 5 https://8.8.8.8 > /dev/null 2>&1; then
+        pass "DNS resolution OK"
+    else
+        warn "DNS may be misconfigured"
+        fix "Try: sudo systemctl restart NetworkManager"
+    fi
+}
+
+check_disk_health() {
+    section "Disk Health"
+    for disk in /dev/sd? /dev/nvme?n?; do
+        [[ -b "$disk" ]] || continue
+        local health
+        health=$(smartctl -H "$disk" 2>/dev/null | grep -E "overall-health|SMART Health" | awk '{print $NF}' || echo "Unknown")
+        local usage
+        usage=$(df -h "$disk" 2>/dev/null | tail -1 | awk '{print $5}' | tr -d '%' || echo "0")
+        if [[ "$health" == "PASSED" || "$health" == "OK" ]]; then
+            pass "Disk $disk — SMART: $health"
+        else
+            fail "Disk $disk — SMART: $health (check immediately!)"
+        fi
+        if [[ -n "$usage" ]] && (( usage > 90 )); then
+            warn "Disk $disk — ${usage}% full (run: sudo mint-clean)"
+        elif [[ -n "$usage" ]] && (( usage > 75 )); then
+            warn "Disk $disk — ${usage}% full"
+        else
+            pass "Disk $disk — ${usage}% used"
+        fi
+    done
+}
+
+check_memory() {
+    section "Memory"
+    local total used pct
+    total=$(free -m | awk '/Mem:/{print $2}')
+    used=$(free -m  | awk '/Mem:/{print $3}')
+    pct=$(free | awk '/Mem:/{printf "%.0f", $3/$2*100}')
+    if (( pct > 90 )); then
+        fail "RAM critically high: ${pct}% (${used}MB / ${total}MB)"
+    elif (( pct > 75 )); then
+        warn "RAM usage elevated: ${pct}% (${used}MB / ${total}MB)"
+    else
+        pass "RAM usage normal: ${pct}% (${used}MB / ${total}MB)"
+    fi
+
+    local swap_total
+    swap_total=$(free -m | awk '/Swap:/{print $2}')
+    if (( swap_total == 0 )); then
+        warn "No swap configured (zram recommended)"
+        fix "Enable: sudo systemctl enable --now zram-setup"
+    else
+        pass "Swap available: ${swap_total}MB"
+    fi
+}
+
+check_services() {
+    section "Essential Services"
+    local services=(NetworkManager sddm bluetooth cups ufw apparmor fstrim.timer)
+    for svc in "${services[@]}"; do
+        if systemctl is-enabled --quiet "$svc" 2>/dev/null; then
+            if systemctl is-active --quiet "$svc" 2>/dev/null; then
+                pass "$svc — enabled and running"
+            else
+                warn "$svc — enabled but not running"
+                fix "Start: sudo systemctl start $svc"
+            fi
+        else
+            warn "$svc — not enabled"
+            fix "Enable: sudo systemctl enable --now $svc"
+        fi
+    done
+}
+
+check_security() {
+    section "Security Status"
+
+    # Firewall
+    if systemctl is-active --quiet ufw 2>/dev/null; then
+        local ufw_state
+        ufw_state=$(ufw status 2>/dev/null | head -1)
+        if echo "$ufw_state" | grep -q "active"; then
+            pass "Firewall (ufw) — active"
+        else
+            fail "Firewall (ufw) — inactive"
+            fix "Enable: sudo ufw enable"
+        fi
+    else
+        fail "Firewall not running"
+        fix "Setup: sudo mint-privacy"
+    fi
+
+    # AppArmor
+    if command -v aa-status &>/dev/null; then
+        local enforced
+        enforced=$(aa-status 2>/dev/null | grep "profiles are in enforce mode" | awk '{print $1}' || echo "0")
+        if [[ "$enforced" -gt 0 ]] 2>/dev/null; then
+            pass "AppArmor — $enforced profiles enforcing"
+        else
+            warn "AppArmor — no profiles enforcing"
+            fix "Harden: sudo mint-privacy"
+        fi
+    else
+        warn "AppArmor not installed"
+    fi
+
+    # Failed logins
+    local failed_logins
+    failed_logins=$(journalctl -u sshd --since "24h ago" 2>/dev/null | grep -c "Failed" || echo "0")
+    if (( failed_logins > 20 )); then
+        warn "$failed_logins SSH login failures in last 24h"
+        fix "Check: sudo journalctl -u sshd | grep Failed"
+    else
+        pass "SSH — $failed_logins failed logins (24h)"
+    fi
+}
+
+check_packages() {
+    section "Package System"
+
+    # Pacman DB lock
+    if [[ -f /var/lib/pacman/db.lck ]]; then
+        fail "Pacman database locked"
+        fix "Remove: sudo rm /var/lib/pacman/db.lck"
+    else
+        pass "Pacman database — clean"
+    fi
+
+    # Pending updates
+    local updates
+    updates=$(checkupdates 2>/dev/null | wc -l || echo "0")
+    if (( updates > 100 )); then
+        fail "$updates pending updates (very outdated — run: sudo mint-update)"
+    elif (( updates > 0 )); then
+        warn "$updates pending updates (run: sudo mint-update)"
+    else
+        pass "System up to date"
+    fi
+
+    # Broken packages
+    if pacman -Dk 2>/dev/null | grep -q "error"; then
+        fail "Broken package dependencies detected"
+        fix "Fix: sudo pacman -Syu"
+    else
+        pass "Package dependencies — OK"
+    fi
+}
+
+check_filesystem() {
+    section "Filesystem"
+
+    # Btrfs errors
+    if findmnt -n -o FSTYPE / | grep -q btrfs; then
+        if dmesg 2>/dev/null | grep -qi "btrfs.*error"; then
+            fail "Btrfs filesystem errors detected"
+            fix "Run: sudo btrfs check --readonly /"
+        else
+            pass "Btrfs filesystem — healthy"
+        fi
+
+        # Snapshot count
+        if command -v snapper &>/dev/null; then
+            local snap_count
+            snap_count=$(snapper -c root list 2>/dev/null | tail -n +3 | wc -l || echo "0")
+            pass "Btrfs snapshots: $snap_count available"
+        fi
+    fi
+
+    # Inode usage
+    local inode_pct
+    inode_pct=$(df -i / | awk 'NR==2{print $5}' | tr -d '%')
+    if (( inode_pct > 90 )); then
+        fail "Inode usage critical: ${inode_pct}%"
+    elif (( inode_pct > 75 )); then
+        warn "Inode usage elevated: ${inode_pct}%"
+    else
+        pass "Inode usage: ${inode_pct}%"
+    fi
+}
+
+check_temperature() {
+    section "Temperature"
+    if command -v sensors &>/dev/null; then
+        sensors 2>/dev/null | grep -E "Core|Tctl|Package|CPU" | while read -r line; do
+            local temp
+            temp=$(echo "$line" | grep -o '+[0-9]*\.' | head -1 | tr -d '+.')
+            if [[ -n "$temp" ]]; then
+                if (( temp > 90 )); then
+                    fail "HOT: $line"
+                elif (( temp > 75 )); then
+                    warn "WARM: $line"
+                else
+                    pass "$line"
+                fi
+            fi
+        done
+    else
+        info "Install lm_sensors for temperature monitoring: sudo pacman -S lm_sensors"
+    fi
+}
+
+show_report() {
+    echo ""
+    echo -e "${BOLD}${CYAN}════════════════════════════════════════${NC}"
+    echo -e "${BOLD}  Mint OS Doctor — Report Summary${NC}"
+    echo -e "${BOLD}${CYAN}════════════════════════════════════════${NC}"
+    echo ""
+
+    if [[ ${#FAILURES[@]} -eq 0 && ${#WARNINGS[@]} -eq 0 ]]; then
+        echo -e "  ${GREEN}${BOLD}All checks passed! System is healthy.${NC}"
+    else
+        if [[ ${#FAILURES[@]} -gt 0 ]]; then
+            echo -e "  ${RED}${BOLD}FAILURES (${#FAILURES[@]}):${NC}"
+            for f in "${FAILURES[@]}"; do
+                echo -e "  ${RED}✗${NC} $f"
+            done
+            echo ""
+        fi
+        if [[ ${#WARNINGS[@]} -gt 0 ]]; then
+            echo -e "  ${YELLOW}${BOLD}WARNINGS (${#WARNINGS[@]}):${NC}"
+            for w in "${WARNINGS[@]}"; do
+                echo -e "  ${YELLOW}⚠${NC} $w"
+            done
+        fi
+    fi
+
+    echo ""
+    echo -e "  Full log: ${BOLD}$LOG${NC}"
+    echo ""
+}
+
+main() {
+    banner
+    check_internet
+    check_disk_health
+    check_memory
+    check_services
+    check_security
+    check_packages
+    check_filesystem
+    check_temperature
+    show_report
+}
+
+main "$@"
