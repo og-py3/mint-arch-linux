@@ -1,0 +1,126 @@
+# =============================================================================
+# Mint OS — KDE Plasma Desktop (Wayland-first)
+# =============================================================================
+
+# Wayland
+wayland
+wayland-protocols
+wayland-utils
+xdg-desktop-portal
+xdg-desktop-portal-kde
+xorg-xwayland
+
+# KDE Plasma
+plasma-meta
+plasma-wayland-session
+kwin
+kwin-wayland
+plasma-pa
+plasma-nm
+plasma-systemmonitor
+kscreen
+kwallet
+kwallet-pam
+ksshaskpass
+
+# SDDM login manager
+sddm
+sddm-kcm
+
+# KDE Apps
+dolphin
+konsole
+kate
+okular
+gwenview
+spectacle
+ark
+kcalc
+kwrite
+kfind
+krunner
+kwalletmanager
+filelight
+ksysguard
+partitionmanager
+kde-gtk-config
+breeze-gtk
+
+# Theming
+kvantum
+papirus-icon-theme
+breeze
+breeze-icons
+
+# Wayland session tools
+kwayland
+kwayland-server
+qt5-wayland
+qt6-wayland
+layer-shell-qt
+kglobalaccel5
+
+# XDG
+xdg-user-dirs
+xdg-utils
+
+# Bluetooth
+bluez
+bluez-utils
+bluedevil
+
+# Printing
+cups
+cups-pdf
+system-config-printer
+
+# Multimedia
+vlc
+mpv
+ffmpeg
+gstreamer
+gst-plugins-good
+gst-plugins-bad
+gst-plugins-ugly
+gst-libav
+phonon-qt5-gstreamer
+
+# Browser
+firefox
+
+# Office
+libreoffice-fresh
+
+# System
+packagekit
+packagekit-qt5
+fwupd
+flatpak
+appstream
+discover
+
+# GPU drivers (auto-detected)
+mesa
+mesa-utils
+vulkan-icd-loader
+lib32-vulkan-icd-loader
+xf86-video-vesa
+xf86-video-fbdev
+xf86-video-vmware
+open-vm-tools
+virtualbox-guest-utils
+xf86-video-qxl
+spice-vdagent
+
+# Notifications
+libnotify
+
+# KDE blur & effects (Wayland compositor)
+kdecoration
+
+# Terminal emulator extras
+tmux
+screen
+
+# Accessibility
+at-spi2-core
