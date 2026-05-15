@@ -83,6 +83,18 @@ clean_build() {
     info "Clean done."
 }
 
+setup_blackarch_keyring() {
+    section "Setting Up BlackArch Keyring"
+    info "Adding BlackArch signing key to pacman keyring..."
+    pacman-key --recv-keys 4345771566D76038C7FEB43863EC0ADBEA87E4E3 2>/dev/null || \
+        pacman-key --keyserver keyserver.ubuntu.com \
+            --recv-keys 4345771566D76038C7FEB43863EC0ADBEA87E4E3
+    pacman-key --lsign-key 4345771566D76038C7FEB43863EC0ADBEA87E4E3
+    ok "BlackArch key trusted"
+    pacman -Sy --noconfirm blackarch-keyring 2>/dev/null || true
+    ok "BlackArch keyring ready"
+}
+
 build_iso() {
     section "Building ISO"
     mkdir -p "$OUT_DIR"
@@ -143,6 +155,7 @@ main() {
     banner
     check_requirements
     $CLEAN && clean_build
+    setup_blackarch_keyring
     combine_packages
     build_iso
     generate_checksum
