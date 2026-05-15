@@ -1,5 +1,8 @@
 # Mint Arch Linux
 
+**By Haripriyan N**
+
+
 **Rolling Arch Linux · KDE Plasma 6 · Security Tools · Browser Desktop · Developer-Ready**
 
 ```
