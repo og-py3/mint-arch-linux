@@ -1,0 +1,16 @@
+{
+  "name": "Mint Arch Linux Desktop",
+  "build": { "dockerfile": "../Dockerfile" },
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {
+      "label": "Mint Arch Linux Desktop",
+      "onAutoForward": "openBrowser"
+    }
+  },
+  "postStartCommand": "chmod +x /workspaces/mint-arch-desktop/scripts/*.sh && bash /workspaces/mint-arch-desktop/scripts/start-desktop.sh",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "remoteUser": "root"
+}
