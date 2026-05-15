@@ -1,0 +1,169 @@
+#!/usr/bin/env bash
+# =============================================================================
+# Mint OS — mint-optimizer  |  System performance optimizer with profiles
+# =============================================================================
+set -euo pipefail
+
+MINT='\033[38;2;46;203;113m'; BOLD='\033[1m'; NC='\033[0m'
+YELLOW='\033[1;33m'; RED='\033[0;31m'; GREEN='\033[0;32m'; CYAN='\033[0;36m'
+
+info()    { echo -e "${MINT}[+]${NC} $*"; }
+ok()      { echo -e "${GREEN}[✓]${NC} $*"; }
+warn()    { echo -e "${YELLOW}[!]${NC} $*"; }
+error()   { echo -e "${RED}[✗]${NC} $*"; exit 1; }
+section() { echo -e "\n${BOLD}${CYAN}── $* ──${NC}"; }
+
+check_root() { [[ "$EUID" -eq 0 ]] || error "Run as root: sudo mint-optimizer"; }
+
+banner() {
+    echo -e "${MINT}${BOLD}"
+    echo "  ╔════════════════════════════════════╗"
+    echo "  ║   Mint OS Performance Optimizer    ║"
+    echo "  ╚════════════════════════════════════╝${NC}"
+}
+
+set_cpu_governor() {
+    local gov="$1"
+    local applied=0
+    for cpu in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+        [[ -f "$cpu" ]] && echo "$gov" > "$cpu" && (( applied++ ))
+    done
+    ok "CPU governor → $gov ($applied cores)"
+}
+
+profile_balanced() {
+    section "Profile: Balanced (Default)"
+    set_cpu_governor "schedutil"
+    echo "madvise" > /sys/kernel/mm/transparent_hugepage/enabled 2>/dev/null || true
+    sysctl -w vm.swappiness=10 vm.dirty_ratio=10 kernel.nmi_watchdog=0 > /dev/null
+    systemctl stop irqbalance 2>/dev/null || true; systemctl start irqbalance 2>/dev/null || true
+    [[ -f /sys/class/power_supply/AC/online ]] && \
+        for f in /sys/class/net/*/device/power/control; do echo auto > "$f" 2>/dev/null || true; done
+    ok "Balanced profile applied — good for daily use"
+}
+
+profile_performance() {
+    section "Profile: Performance"
+    set_cpu_governor "performance"
+    echo "never" > /sys/kernel/mm/transparent_hugepage/enabled 2>/dev/null || true
+    sysctl -w vm.swappiness=5 vm.dirty_ratio=5 vm.dirty_background_ratio=2 > /dev/null
+    # Disable CPU frequency scaling limits
+    for f in /sys/devices/system/cpu/cpufreq/policy*/energy_performance_preference; do
+        echo "performance" > "$f" 2>/dev/null || true
+    done
+    ok "Performance profile applied — maximum speed"
+}
+
+profile_battery() {
+    section "Profile: Battery Saver"
+    set_cpu_governor "powersave"
+    echo "always" > /sys/kernel/mm/transparent_hugepage/enabled 2>/dev/null || true
+    sysctl -w vm.swappiness=60 vm.dirty_ratio=20 > /dev/null
+    # WiFi power save
+    for iface in /sys/class/net/wl*/device/power/control; do
+        echo auto > "$iface" 2>/dev/null || true
+    done
+    # Disk power management
+    for disk in /dev/sd?; do
+        [[ -b "$disk" ]] && hdparm -B 128 -S 12 "$disk" 2>/dev/null || true
+    done
+    ok "Battery saver profile applied"
+}
+
+profile_gaming() {
+    section "Profile: Gaming"
+    set_cpu_governor "performance"
+    echo "never" > /sys/kernel/mm/transparent_hugepage/enabled 2>/dev/null || true
+    sysctl -w vm.swappiness=1 vm.max_map_count=2147483642 \
+           kernel.split_lock_mitigate=0 > /dev/null
+    # Disable CPU mitigations for maximum perf (security tradeoff)
+    info "Note: gaming profile prioritizes FPS over security mitigations"
+    # GameMode if available
+    command -v gamemoded &>/dev/null && systemctl start gamemoded 2>/dev/null || true
+    ok "Gaming profile applied — maximum FPS"
+}
+
+enable_zram() {
+    section "zram Compressed Swap"
+    if lsblk | grep -q zram; then
+        ok "zram already active"
+        lsblk | grep zram
+    else
+        modprobe zram num_devices=1
+        local ram_mb
+        ram_mb=$(grep MemTotal /proc/meminfo | awk '{printf "%.0f", $2/1024}')
+        local zram_mb=$(( ram_mb / 2 ))
+        echo lz4 > /sys/block/zram0/comp_algorithm
+        echo "${zram_mb}M" > /sys/block/zram0/disksize
+        mkswap /dev/zram0
+        swapon -p 100 /dev/zram0
+        ok "zram enabled: ${zram_mb}MB (lz4)"
+    fi
+}
+
+optimize_boot() {
+    section "Boot Optimization"
+    # Mask unused services
+    local to_mask=(
+        ModemManager.service
+        geoclue.service
+        wpa_supplicant.service
+    )
+    for svc in "${to_mask[@]}"; do
+        if ! systemctl is-enabled "$svc" 2>/dev/null | grep -q "masked"; then
+            systemctl mask "$svc" 2>/dev/null && info "Masked: $svc" || true
+        fi
+    done
+
+    # Systemd analyze top 10
+    echo ""
+    echo "  Top boot-time services:"
+    systemd-analyze blame 2>/dev/null | head -10 | while read -r line; do
+        echo "    $line"
+    done
+    ok "Boot optimization applied"
+}
+
+show_menu() {
+    echo -e "\n${BOLD}Select optimization profile:${NC}"
+    echo ""
+    echo "  1) Balanced     — daily use, good all-around"
+    echo "  2) Performance  — maximum speed, no throttling"
+    echo "  3) Battery      — extend battery life"
+    echo "  4) Gaming       — max FPS, optimized for gaming"
+    echo "  5) Enable zram  — compressed RAM swap"
+    echo "  6) Optimize boot times"
+    echo "  Q) Quit"
+    echo ""
+}
+
+main() {
+    banner
+    check_root
+
+    case "${1:-menu}" in
+        --balanced)     profile_balanced;   exit 0 ;;
+        --performance)  profile_performance; exit 0 ;;
+        --battery)      profile_battery;    exit 0 ;;
+        --gaming)       profile_gaming;     exit 0 ;;
+        --zram)         enable_zram;        exit 0 ;;
+        --boot)         optimize_boot;      exit 0 ;;
+    esac
+
+    while true; do
+        show_menu
+        read -r -p "Choice: " choice
+        case "$choice" in
+            1) profile_balanced ;;
+            2) profile_performance ;;
+            3) profile_battery ;;
+            4) profile_gaming ;;
+            5) enable_zram ;;
+            6) optimize_boot ;;
+            [Qq]) echo -e "${MINT}Goodbye!${NC}"; exit 0 ;;
+            *) warn "Invalid choice." ;;
+        esac
+    done
+}
+
+main "$@"
