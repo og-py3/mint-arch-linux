@@ -1,0 +1,154 @@
+# =============================================================================
+# Mint OS — Base System (Wayland-first, fast boot)
+# =============================================================================
+
+# Core
+base
+base-devel
+linux
+linux-headers
+linux-firmware
+linux-firmware-qlogic
+mkinitcpio
+mkinitcpio-archiso
+amd-ucode
+intel-ucode
+
+# Boot
+grub
+efibootmgr
+os-prober
+syslinux
+plymouth
+
+# Filesystems
+btrfs-progs
+dosfstools
+e2fsprogs
+exfatprogs
+f2fs-tools
+mtools
+ntfs-3g
+xfsprogs
+
+# Core utils
+coreutils
+util-linux
+procps-ng
+psmisc
+shadow
+pam
+sudo
+polkit
+dbus
+inotify-tools
+fuse3
+
+# Shell
+bash
+bash-completion
+zsh
+zsh-completions
+zsh-autosuggestions
+zsh-syntax-highlighting
+fish
+starship
+
+# Editors
+vim
+neovim
+nano
+
+# Network
+networkmanager
+network-manager-applet
+wpa_supplicant
+wireless_tools
+iw
+iwd
+dhcpcd
+openresolv
+nss-mdns
+avahi
+curl
+wget
+rsync
+openssh
+openvpn
+wireguard-tools
+
+# System tools
+htop
+btop
+neofetch
+fastfetch
+lsof
+strace
+man-db
+man-pages
+lsb-release
+
+# Hardware
+usbutils
+pciutils
+dmidecode
+inxi
+lm_sensors
+smartmontools
+hdparm
+nvme-cli
+hwinfo
+
+# Compression
+zip
+unzip
+tar
+gzip
+bzip2
+xz
+p7zip
+zstd
+lz4
+unar
+
+# Security
+apparmor
+ufw
+fail2ban
+audit
+
+# Audio
+pipewire
+pipewire-alsa
+pipewire-audio
+pipewire-jack
+pipewire-pulse
+wireplumber
+alsa-utils
+
+# Fonts
+ttf-dejavu
+ttf-liberation
+noto-fonts
+noto-fonts-emoji
+ttf-font-awesome
+ttf-jetbrains-mono-nerd
+ttf-hack-nerd
+ttf-roboto
+noto-fonts-cjk
+
+# Python
+python
+python-pip
+python-setuptools
+python-wheel
+
+# Pacman extras
+pacman-contrib
+reflector
+pkgfile
+
+# Performance
+zram-generator
+irqbalance
+thermald
