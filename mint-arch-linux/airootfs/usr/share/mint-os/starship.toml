@@ -1,0 +1,101 @@
+# Mint OS — Starship Prompt Configuration
+# Minimal, informative, mint-green themed
+
+format = """
+[╭─](green) $os$username$hostname $directory$git_branch$git_status$python$rust$golang$nodejs$docker_context
+[╰─](green)$character """
+
+[os]
+disabled = false
+style = "green bold"
+[os.symbols]
+Arch = " "
+Linux = " "
+
+[username]
+show_always = false
+style_user = "green bold"
+style_root = "red bold"
+format = "[$user]($style)"
+
+[hostname]
+ssh_only = true
+style = "cyan"
+format = "@[$hostname]($style)"
+
+[directory]
+style = "bold cyan"
+truncation_length = 4
+truncate_to_repo = true
+format = "[$path]($style)[$read_only]($read_only_style) "
+[directory.substitutions]
+"~" = " ~"
+"/etc" = " etc"
+
+[git_branch]
+symbol = " "
+style = "bold green"
+format = "on [$symbol$branch]($style) "
+
+[git_status]
+format = '([\[$all_status$ahead_behind\]]($style) )'
+style = "bold red"
+conflicted = "⚡"
+ahead = "⇡${count}"
+behind = "⇣${count}"
+diverged = "⇕⇡${ahead_count}⇣${behind_count}"
+untracked = "?${count}"
+modified = "!${count}"
+staged = "+${count}"
+renamed = "»${count}"
+deleted = "✘${count}"
+
+[python]
+symbol = " "
+style = "yellow"
+format = "via [$symbol$version]($style) "
+
+[rust]
+symbol = " "
+style = "red"
+format = "via [$symbol$version]($style) "
+
+[golang]
+symbol = " "
+style = "cyan"
+format = "via [$symbol$version]($style) "
+
+[nodejs]
+symbol = " "
+style = "green"
+format = "via [$symbol$version]($style) "
+
+[docker_context]
+symbol = " "
+style = "blue"
+format = "via [$symbol$context]($style) "
+
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"
+vimcmd_symbol = "[❮](bold green)"
+
+[cmd_duration]
+show_milliseconds = false
+format = "took [$duration](yellow) "
+min_time = 2000
+
+[time]
+disabled = true
+format = "[$time]($style) "
+time_format = "%H:%M"
+
+[battery]
+disabled = false
+format = "[$symbol$percentage]($style) "
+[[battery.display]]
+threshold = 20
+style = "bold red"
+[[battery.display]]
+threshold = 50
+style = "yellow"
