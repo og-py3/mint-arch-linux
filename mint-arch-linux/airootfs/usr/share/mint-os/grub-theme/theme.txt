@@ -1,0 +1,62 @@
+# Mint OS GRUB Theme
+
+desktop-color: "#0d0d0d"
+desktop-image: "background.png"
+
++ boot_menu {
+  left = 15%
+  top = 35%
+  width = 70%
+  height = 40%
+  item_color = "#cccccc"
+  selected_item_color = "#ffffff"
+  selected_item_pixmap_style = "select_*.png"
+  item_height = 28
+  item_padding = 8
+  item_spacing = 4
+  scrollbar = false
+}
+
++ label {
+  top = 15%
+  left = 0
+  width = 100%
+  height = 10%
+  align = center
+  id = "__title__"
+  text = "Mint OS"
+  font = "DejaVu Sans Bold 28"
+  color = "#3a9e3a"
+}
+
++ label {
+  top = 22%
+  left = 0
+  width = 100%
+  height = 5%
+  align = center
+  text = "Rolling Linux · Security Tools · KDE Plasma"
+  font = "DejaVu Sans 14"
+  color = "#888888"
+}
+
++ progress_bar {
+  id = "__timeout__"
+  left = 25%
+  top = 83%
+  width = 50%
+  height = 6
+  fg_color = "#3a9e3a"
+  bg_color = "#333333"
+  border_color = "#555555"
+}
+
++ label {
+  top = 87%
+  left = 0
+  width = 100%
+  align = center
+  text = "Booting in %d seconds"
+  font = "DejaVu Sans 11"
+  color = "#666666"
+}
