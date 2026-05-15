@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+# =============================================================================
+# Mint Arch Linux — BlackArch Repository Bootstrap
+# Adds the BlackArch repo and keyring to the running system
+# =============================================================================
+
+set -euo pipefail
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+if [ "$EUID" -ne 0 ]; then
+    echo -e "${RED}[!] Run as root: sudo mint-blackarch-setup${NC}"
+    exit 1
+fi
+
+echo -e "${CYAN}"
+echo "  ██████╗ ██╗      █████╗  ██████╗██╗  ██╗ █████╗ ██████╗  ██████╗██╗  ██╗"
+echo "  ██╔══██╗██║     ██╔══██╗██╔════╝██║ ██╔╝██╔══██╗██╔══██╗██╔════╝██║  ██║"
+echo "  ██████╔╝██║     ███████║██║     █████╔╝ ███████║██████╔╝██║     ███████║"
+echo "  ██╔══██╗██║     ██╔══██║██║     ██╔═██╗ ██╔══██║██╔══██╗██║     ██╔══██║"
+echo "  ██████╔╝███████╗██║  ██║╚██████╗██║  ██╗██║  ██║██║  ██║╚██████╗██║  ██║"
+echo "  ╚═════╝ ╚══════╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝"
+echo -e "${NC}"
+echo -e "  ${BOLD}Mint Arch Linux — BlackArch Repository Setup${NC}"
+echo "  ─────────────────────────────────────────────"
+echo ""
+
+if grep -q '\[blackarch\]' /etc/pacman.conf 2>/dev/null; then
+    echo -e "${GREEN}[✓] BlackArch repository is already configured!${NC}"
+    echo ""
+    echo -e "  Run ${BOLD}mint-tools-setup${NC} to install tools."
+    echo -e "  Or install a full group: ${CYAN}pacman -S blackarch-webapp${NC}"
+    echo -e "  Or install everything:   ${CYAN}pacman -S blackarch${NC}"
+    echo ""
+    echo -e "  Available groups:"
+    pacman -Sg 2>/dev/null | grep blackarch | column || true
+    exit 0
+fi
+
+echo -e "${YELLOW}[*] Setting up BlackArch Linux repository...${NC}"
+echo ""
+
+echo -e "${YELLOW}[1/4] Downloading BlackArch strap script...${NC}"
+curl -fsSL https://blackarch.org/strap.sh -o /tmp/blackarch-strap.sh
+
+echo -e "${YELLOW}[2/4] Verifying checksum...${NC}"
+expected_sha1="5ea40d49ecd14c2e024deecf90605426db3f1376"
+actual_sha1=$(sha1sum /tmp/blackarch-strap.sh | awk '{print $1}')
+if [ "$actual_sha1" != "$expected_sha1" ]; then
+    echo -e "${RED}[✗] Checksum mismatch! Possible tampering detected.${NC}"
+    echo -e "    Expected: $expected_sha1"
+    echo -e "    Got:      $actual_sha1"
+    rm -f /tmp/blackarch-strap.sh
+    exit 1
+fi
+echo -e "${GREEN}[✓] Checksum verified${NC}"
+
+echo -e "${YELLOW}[3/4] Running strap script (adds keyring + repo)...${NC}"
+chmod +x /tmp/blackarch-strap.sh
+bash /tmp/blackarch-strap.sh
+rm -f /tmp/blackarch-strap.sh
+
+echo -e "${YELLOW}[4/4] Syncing package databases...${NC}"
+pacman -Sy --noconfirm
+
+echo ""
+echo -e "${GREEN}╔══════════════════════════════════════════════════════╗${NC}"
+echo -e "${GREEN}║  BlackArch Repository Setup Complete!                ║${NC}"
+echo -e "${GREEN}╠══════════════════════════════════════════════════════╣${NC}"
+echo -e "${GREEN}║${NC}  2800+ security tools now available via pacman"
+echo -e "${GREEN}║${NC}"
+echo -e "${GREEN}║${NC}  Next steps:"
+echo -e "${GREEN}║${NC}    sudo mint-tools-setup          — interactive menu"
+echo -e "${GREEN}║${NC}    pacman -S blackarch-webapp      — install a group"
+echo -e "${GREEN}║${NC}    pacman -S blackarch             — install everything"
+echo -e "${GREEN}║${NC}    pacman -Sg | grep blackarch     — list all groups"
+echo -e "${GREEN}╚══════════════════════════════════════════════════════╝${NC}"
+echo ""
