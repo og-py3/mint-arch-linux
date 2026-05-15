@@ -1,101 +1,192 @@
 # =============================================================================
-# Mint OS - Built-in Security & Pentesting Tools
-# All packages sourced from official Arch Linux repositories only
+# Mint Arch Linux — Pre-installed Security Tools
+# These are bundled into the ISO at build time (works offline after install)
+# Full BlackArch suite (2800+ tools) available via: sudo mint-tools-setup
 # =============================================================================
 
-# ---- Information Gathering ----
+# ── Information Gathering ────────────────────────────────────────────────────
 nmap
 masscan
 netdiscover
 arp-scan
 whois
-dnsutils
 bind
 traceroute
 mtr
 tcptraceroute
-unicornscan
+smbmap
+nbtscan
+onesixtyone
+fping
+hping
 
-# ---- Web Application Testing ----
+# ── Reconnaissance ───────────────────────────────────────────────────────────
+whatweb
+wafw00f
+dnsrecon
+fierce
+dnsenum
+theharvester
+amass
+subfinder
+httpx
+
+# ── Web Application Testing ──────────────────────────────────────────────────
 sqlmap
 nikto
 dirb
 gobuster
 ffuf
 wfuzz
-curl
-wget
-httpie
+burpsuite
+zaproxy
+wapiti
+commix
+skipfish
 
-# ---- Password Tools ----
+# ── Password & Hash Cracking ─────────────────────────────────────────────────
 hashcat
 john
 hydra
 medusa
 crunch
 cewl
+hash-identifier
+pdfcrack
+fcrackzip
+rarcrack
 
-# ---- Wireless & Network ----
+# ── Wireless & WiFi ──────────────────────────────────────────────────────────
 aircrack-ng
 kismet
 wireshark-qt
 wireshark-cli
-tcpdump
-ettercap
 bettercap
 mdk4
 pixiewps
 reaver
+hcxdumptool
+hcxtools
+iw
+wireless_tools
+wavemon
 
-# ---- Exploitation ----
+# ── Exploitation ─────────────────────────────────────────────────────────────
 metasploit
+exploitdb
+pwntools
+python-impacket
+python-pycryptodome
 
-# ---- Forensics ----
+# ── Post-Exploitation ────────────────────────────────────────────────────────
+crackmapexec
+evil-winrm
+smbclient
+bloodhound
+neo4j
+
+# ── Forensics & Recovery ─────────────────────────────────────────────────────
 autopsy
+sleuthkit
 binwalk
 foremost
 testdisk
-extundelete
+photorec
 dc3dd
+ddrescue
+exiftool
+bulk-extractor
+volatility3
 
-# ---- Reverse Engineering ----
+# ── Reverse Engineering ──────────────────────────────────────────────────────
 radare2
+ghidra
+cutter
 gdb
-gef
+pwndbg
 ltrace
 strace
 valgrind
-pwndbg
+apktool
+dex2jar
+jadx
 
-# ---- Decompilation ----
-ghidra
+# ── Sniffing & Spoofing ──────────────────────────────────────────────────────
+tcpdump
+dsniff
+ettercap
+responder
+arpwatch
+mitmproxy
+sslstrip
+netsed
 
-# ---- Steganography & Crypto ----
-steghide
-exiftool
-openssl
-
-# ---- Network Tools ----
+# ── Network Tools ────────────────────────────────────────────────────────────
 ncat
+netcat
 socat
 proxychains-ng
 tor
-sslscan
-netcat
+torsocks
 openvpn
 wireguard-tools
+sslscan
+openssl
+gnutls-utils
 
-# ---- OSINT ----
+# ── Cryptography & Steganography ─────────────────────────────────────────────
+steghide
+stegseek
+age
+gnupg
+xortool
+
+# ── OSINT ────────────────────────────────────────────────────────────────────
 maltego
+recon-ng
+sherlock
+spiderfoot
 
-# ---- Social Engineering ----
+# ── Social Engineering ───────────────────────────────────────────────────────
 set
 
-# ---- Sniffing ----
-dsniff
-responder
+# ── Fuzzing ──────────────────────────────────────────────────────────────────
+radamsa
+american-fuzzy-lop
 
-# ---- System & Misc ----
-gdb
-pwntools
-impacket
+# ── Container Security ───────────────────────────────────────────────────────
+trivy
+dive
+grype
+syft
+hadolint
+
+# ── Mobile Security ──────────────────────────────────────────────────────────
+apktool
+dex2jar
+jadx
+adb
+fastboot
+androguard
+
+# ── Defensive & Monitoring ───────────────────────────────────────────────────
+snort
+suricata
+rkhunter
+chkrootkit
+lynis
+clamav
+auditd
+aide
+
+# ── Malware Analysis ─────────────────────────────────────────────────────────
+yara
+python-yara
+
+# ── Firmware Analysis ────────────────────────────────────────────────────────
+binwalk
+flashrom
+esptool
+
+# ── Wordlists & Resources ────────────────────────────────────────────────────
+wordlistctl
