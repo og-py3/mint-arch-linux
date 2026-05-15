@@ -1,0 +1,9 @@
+## Mint Arch Linux sudoers additions
+## Allow wheel group members to use sudo
+%wheel ALL=(ALL:ALL) ALL
+
+## Allow mint user to run specific commands without password (live session)
+mint ALL=(ALL) NOPASSWD: /usr/local/bin/mint-installer
+mint ALL=(ALL) NOPASSWD: /usr/local/bin/mint-firstboot
+mint ALL=(ALL) NOPASSWD: /usr/bin/pacman
+mint ALL=(ALL) NOPASSWD: /usr/bin/systemctl
