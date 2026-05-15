@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=Mint Arch Linux
+Description=Mint Arch Linux boot splash — dark with mint-green pulse animation
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/mintarch
+ScriptFile=/usr/share/plymouth/themes/mintarch/mintarch.script
