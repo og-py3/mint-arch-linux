@@ -1,0 +1,8 @@
+# Mint Arch Linux default desktop settings
+
+[org/gnome/desktop/interface]
+gtk-theme='Breeze-Dark'
+icon-theme='Papirus-Dark'
+
+[org/kde/plasma/desktop/applets/org.kde.plasma.kickoff/General]
+icon='mintarch-logo'
