@@ -1,0 +1,19 @@
+[SSH]
+title=SSH
+description=Secure Shell remote access
+ports=22/tcp
+
+[HTTP/HTTPS]
+title=Web
+description=HTTP and HTTPS
+ports=80,443/tcp
+
+[DNS-over-HTTPS]
+title=DNS-over-HTTPS
+description=Encrypted DNS via HTTPS
+ports=853/tcp
+
+[KDE Connect]
+title=KDE Connect
+description=KDE device pairing
+ports=1714:1764/tcp|1714:1764/udp
