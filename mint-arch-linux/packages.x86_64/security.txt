@@ -1,0 +1,101 @@
+# =============================================================================
+# Mint OS - Built-in Security & Pentesting Tools
+# All packages sourced from official Arch Linux repositories only
+# =============================================================================
+
+# ---- Information Gathering ----
+nmap
+masscan
+netdiscover
+arp-scan
+whois
+dnsutils
+bind
+traceroute
+mtr
+tcptraceroute
+unicornscan
+
+# ---- Web Application Testing ----
+sqlmap
+nikto
+dirb
+gobuster
+ffuf
+wfuzz
+curl
+wget
+httpie
+
+# ---- Password Tools ----
+hashcat
+john
+hydra
+medusa
+crunch
+cewl
+
+# ---- Wireless & Network ----
+aircrack-ng
+kismet
+wireshark-qt
+wireshark-cli
+tcpdump
+ettercap
+bettercap
+mdk4
+pixiewps
+reaver
+
+# ---- Exploitation ----
+metasploit
+
+# ---- Forensics ----
+autopsy
+binwalk
+foremost
+testdisk
+extundelete
+dc3dd
+
+# ---- Reverse Engineering ----
+radare2
+gdb
+gef
+ltrace
+strace
+valgrind
+pwndbg
+
+# ---- Decompilation ----
+ghidra
+
+# ---- Steganography & Crypto ----
+steghide
+exiftool
+openssl
+
+# ---- Network Tools ----
+ncat
+socat
+proxychains-ng
+tor
+sslscan
+netcat
+openvpn
+wireguard-tools
+
+# ---- OSINT ----
+maltego
+
+# ---- Social Engineering ----
+set
+
+# ---- Sniffing ----
+dsniff
+responder
+
+# ---- System & Misc ----
+gdb
+pwntools
+impacket
