@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+# =============================================================================
+# Mint OS — mint-fetch  |  System info display (fastfetch replacement)
+# =============================================================================
+set -euo pipefail
+
+G='\033[0;32m'; B='\033[1;34m'; C='\033[0;36m'
+W='\033[1;37m'; D='\033[0;90m'; R='\033[0m'; BOLD='\033[1m'
+MINT='\033[38;2;46;203;113m'
+
+# ── Data Collection ───────────────────────────────────────────────────────────
+OS=$(grep PRETTY_NAME /etc/os-release | cut -d= -f2 | tr -d '"')
+KERNEL=$(uname -r)
+HOST=$(hostname)
+UPTIME=$(uptime -p | sed 's/up //')
+SHELL_NAME=$(basename "$SHELL")
+DE="${XDG_CURRENT_DESKTOP:-KDE Plasma}"
+WM="${WAYLAND_DISPLAY:+Wayland}${DISPLAY:+X11}"
+[[ -z "$WM" ]] && WM="TTY"
+CPU=$(grep "model name" /proc/cpuinfo | head -1 | cut -d: -f2 | sed 's/^ //' | sed 's/(R)//g;s/(TM)//g;s/CPU //g')
+CORES=$(nproc)
+MEM_TOTAL=$(grep MemTotal /proc/meminfo | awk '{printf "%.0f", $2/1024}')
+MEM_FREE=$(grep MemAvailable /proc/meminfo | awk '{printf "%.0f", $2/1024}')
+MEM_USED=$(( MEM_TOTAL - MEM_FREE ))
+DISK_USED=$(df -h / | awk 'NR==2{print $3}')
+DISK_TOTAL=$(df -h / | awk 'NR==2{print $2}')
+PKGS=$(pacman -Q 2>/dev/null | wc -l)
+GPU=$(lspci 2>/dev/null | grep -i 'vga\|3d' | head -1 | sed 's/.*: //' | cut -d'[' -f1 | xargs || echo "Unknown")
+TERM_NAME="${TERM_PROGRAM:-${TERM:-unknown}}"
+
+# ── Logo Lines (ASCII Mint leaf triangle) ─────────────────────────────────────
+L=(
+"${MINT}        /\\\\${R}"
+"${MINT}       /  \\\\${R}"
+"${MINT}      / ${G}🌿${MINT} \\\\${R}"
+"${MINT}     /______\\\\${R}"
+"${MINT}       Mint${R}"
+""
+""
+""
+""
+""
+""
+)
+
+# ── Info Lines ────────────────────────────────────────────────────────────────
+I=(
+"${MINT}${BOLD}$(whoami)${R}${D}@${R}${MINT}${BOLD}${HOST}${R}"
+"${D}──────────────────────────────${R}"
+"${MINT}OS       ${R}  ${OS}"
+"${MINT}Kernel   ${R}  ${KERNEL}"
+"${MINT}Uptime   ${R}  ${UPTIME}"
+"${MINT}Shell    ${R}  ${SHELL_NAME}"
+"${MINT}Desktop  ${R}  ${DE} (${WM})"
+"${MINT}CPU      ${R}  ${CPU} (${CORES} cores)"
+"${MINT}GPU      ${R}  ${GPU}"
+"${MINT}Memory   ${R}  ${MEM_USED}MB / ${MEM_TOTAL}MB"
+"${MINT}Disk     ${R}  ${DISK_USED} / ${DISK_TOTAL} (/)"
+"${MINT}Packages ${R}  ${PKGS} (pacman)"
+"${MINT}Terminal ${R}  ${TERM_NAME}"
+""
+"\033[38;2;218;68;83m██\033[38;2;246;189;0m██\033[38;2;46;203;113m██\033[38;2;61;174;233m██\033[38;2;155;89;182m██\033[38;2;46;203;163m██\033[0m"
+)
+
+# ── Print Side by Side ────────────────────────────────────────────────────────
+MAX=$(( ${#L[@]} > ${#I[@]} ? ${#L[@]} : ${#I[@]} ))
+echo ""
+for (( i=0; i<MAX; i++ )); do
+    printf "  %-30b  %b\n" "${L[$i]:-}" "${I[$i]:-}"
+done
+echo ""
