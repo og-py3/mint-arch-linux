@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Mint OS GRUB theme entry
+
+cat <<'EOF'
+menuentry "Mint OS Live (KDE Plasma)" {
+    search --no-floppy --set=root --label "MINTOS"
+    linux /arch/boot/x86_64/vmlinuz-linux archisobasedir=arch archisolabel=MINTOS quiet splash
+    initrd /arch/boot/intel-ucode.img /arch/boot/amd-ucode.img /arch/boot/x86_64/initramfs-linux.img
+}
+
+menuentry "Mint OS Live (Safe Mode)" {
+    search --no-floppy --set=root --label "MINTOS"
+    linux /arch/boot/x86_64/vmlinuz-linux archisobasedir=arch archisolabel=MINTOS nomodeset
+    initrd /arch/boot/intel-ucode.img /arch/boot/amd-ucode.img /arch/boot/x86_64/initramfs-linux-fallback.img
+}
+
+menuentry "Install Mint OS to Disk" {
+    search --no-floppy --set=root --label "MINTOS"
+    linux /arch/boot/x86_64/vmlinuz-linux archisobasedir=arch archisolabel=MINTOS quiet splash mint_autoinstall=no
+    initrd /arch/boot/intel-ucode.img /arch/boot/amd-ucode.img /arch/boot/x86_64/initramfs-linux.img
+}
+EOF
