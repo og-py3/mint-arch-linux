@@ -1,0 +1,159 @@
+#!/usr/bin/env bash
+# =============================================================================
+# Mint OS — mint-backup  |  Smart backup with Btrfs snapshots + rsync
+# =============================================================================
+set -euo pipefail
+
+LOG_DIR="/var/log/mint-os"; mkdir -p "$LOG_DIR"
+LOG="$LOG_DIR/mint-backup-$(date +%Y%m%d-%H%M%S).log"
+exec > >(tee -a "$LOG") 2>&1
+
+MINT='\033[38;2;46;203;113m'; BOLD='\033[1m'; NC='\033[0m'
+YELLOW='\033[1;33m'; RED='\033[0;31m'; GREEN='\033[0;32m'; CYAN='\033[0;36m'
+
+info()    { echo -e "${MINT}[+]${NC} $*"; }
+warn()    { echo -e "${YELLOW}[!]${NC} $*"; }
+error()   { echo -e "${RED}[✗]${NC} $*"; exit 1; }
+section() { echo -e "\n${BOLD}${CYAN}── $* ──${NC}"; }
+ok()      { echo -e "${GREEN}[✓]${NC} $*"; }
+
+CONFIG_FILE="${HOME}/.config/mint-backup.conf"
+
+load_config() {
+    if [[ -f "$CONFIG_FILE" ]]; then
+        source "$CONFIG_FILE"
+    else
+        BACKUP_DEST=""
+        BACKUP_DIRS=("$HOME/Documents" "$HOME/Pictures" "$HOME/.config")
+        KEEP_SNAPSHOTS=10
+        ENCRYPTION=false
+    fi
+}
+
+save_config() {
+    mkdir -p "$(dirname "$CONFIG_FILE")"
+    cat > "$CONFIG_FILE" <<CONFIG
+BACKUP_DEST="$BACKUP_DEST"
+BACKUP_DIRS=(${BACKUP_DIRS[*]/#/\"} )
+KEEP_SNAPSHOTS=$KEEP_SNAPSHOTS
+ENCRYPTION=$ENCRYPTION
+CONFIG
+    ok "Config saved: $CONFIG_FILE"
+}
+
+banner() {
+    echo -e "${MINT}${BOLD}"
+    echo "  ╔═══════════════════════════════╗"
+    echo "  ║   Mint OS Backup Manager      ║"
+    echo "  ╚═══════════════════════════════╝${NC}"
+}
+
+configure_backup() {
+    section "Backup Configuration"
+    read -r -p "Backup destination (path or remote user@host:/path): " BACKUP_DEST
+    read -r -p "Directories to backup (space-separated) [$HOME/Documents $HOME/.config]: " dirs_input
+    if [[ -n "$dirs_input" ]]; then
+        read -r -a BACKUP_DIRS <<< "$dirs_input"
+    fi
+    read -r -p "Keep how many backups? [10]: " keep
+    KEEP_SNAPSHOTS="${keep:-10}"
+    read -r -p "Enable encryption? (requires GPG key) [y/N]: " enc
+    [[ "$enc" =~ ^[Yy]$ ]] && ENCRYPTION=true || ENCRYPTION=false
+    save_config
+}
+
+btrfs_snapshot() {
+    section "Btrfs Snapshot Backup"
+    if ! findmnt -n -o FSTYPE / | grep -q btrfs; then
+        warn "Root filesystem is not Btrfs — skipping snapshot backup"
+        return
+    fi
+    if ! command -v snapper &>/dev/null; then
+        warn "Snapper not installed — skipping"
+        return
+    fi
+    local desc="mint-backup $(date '+%Y-%m-%d %H:%M')"
+    snapper -c root create --description "$desc" --cleanup-algorithm number
+    ok "Btrfs snapshot created: $desc"
+
+    # Prune old snapshots
+    local count
+    count=$(snapper -c root list 2>/dev/null | tail -n +3 | wc -l)
+    if (( count > KEEP_SNAPSHOTS )); then
+        info "Pruning to last $KEEP_SNAPSHOTS snapshots..."
+        snapper -c root cleanup --type number
+    fi
+}
+
+rsync_backup() {
+    section "File Backup (rsync)"
+    [[ -z "$BACKUP_DEST" ]] && { warn "No backup destination configured. Run: mint-backup --configure"; return; }
+
+    local timestamp
+    timestamp=$(date +%Y%m%d-%H%M%S)
+    local dest="${BACKUP_DEST}/mintos-backup-${timestamp}"
+
+    for dir in "${BACKUP_DIRS[@]}"; do
+        [[ -d "$dir" ]] || { warn "Directory not found: $dir"; continue; }
+        info "Backing up: $dir → $dest"
+        rsync -az --progress \
+            --delete \
+            --exclude='.cache' \
+            --exclude='*.tmp' \
+            --exclude='node_modules' \
+            --exclude='.git' \
+            "$dir" "$dest/"
+        ok "Backed up: $dir"
+    done
+
+    # Create symlink to latest
+    local latest="${BACKUP_DEST}/latest"
+    ln -sfn "$dest" "$latest"
+    ok "Latest backup: $latest"
+}
+
+list_backups() {
+    section "Available Backups"
+    if [[ -z "$BACKUP_DEST" ]]; then
+        warn "No backup destination configured."
+        return
+    fi
+    ls -lt "$BACKUP_DEST" 2>/dev/null | grep "mintos-backup" || info "No backups found in $BACKUP_DEST"
+}
+
+show_menu() {
+    echo -e "\n${BOLD}Mint OS Backup${NC}"
+    echo "  1) Run backup now"
+    echo "  2) Create Btrfs snapshot only"
+    echo "  3) Configure backup"
+    echo "  4) List backups"
+    echo "  Q) Quit"
+    echo ""
+}
+
+main() {
+    banner
+    load_config
+
+    case "${1:-menu}" in
+        --configure) configure_backup; exit 0 ;;
+        --run)       btrfs_snapshot; rsync_backup; exit 0 ;;
+        --snapshot)  btrfs_snapshot; exit 0 ;;
+        --list)      list_backups; exit 0 ;;
+    esac
+
+    while true; do
+        show_menu
+        read -r -p "Choice: " choice
+        case "$choice" in
+            1) btrfs_snapshot; rsync_backup ;;
+            2) btrfs_snapshot ;;
+            3) configure_backup ;;
+            4) list_backups ;;
+            [Qq]) echo "Goodbye!"; exit 0 ;;
+            *) warn "Invalid choice." ;;
+        esac
+    done
+}
+
+main "$@"
