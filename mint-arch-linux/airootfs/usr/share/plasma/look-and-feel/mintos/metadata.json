@@ -1,0 +1,17 @@
+{
+    "KPackageStructure": "Plasma/LookAndFeel",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "Mint Arch Linux"
+            }
+        ],
+        "Description": "Mint Arch Linux Default Theme",
+        "Id": "mintarch",
+        "License": "GPL-2.0-or-later",
+        "Name": "Mint Arch Linux",
+        "Version": "1.0",
+        "Website": "https://github.com/mint-arch-linux"
+    },
+    "X-Plasma-API": "5.0"
+}
