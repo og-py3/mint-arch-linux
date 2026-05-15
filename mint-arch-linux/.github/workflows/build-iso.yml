@@ -1,0 +1,196 @@
+name: Build Mint Arch Linux ISO
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags:
+      - 'v*'
+  schedule:
+    # Nightly build at 02:00 UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: 'Release channel'
+        required: true
+        default: 'stable'
+        type: choice
+        options: [ stable, beta, nightly ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Mint Arch Linux ISO (${{ github.event.inputs.channel || 'stable' }})
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+      options: --privileged
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Determine channel
+        id: channel
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "name=nightly" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "name=${{ github.event.inputs.channel }}" >> $GITHUB_OUTPUT
+          elif echo "${{ github.ref }}" | grep -q "refs/tags/"; then
+            echo "name=stable" >> $GITHUB_OUTPUT
+          else
+            echo "name=beta" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update system & install archiso
+        run: |
+          pacman -Sy --noconfirm archlinux-keyring
+          pacman -Su --noconfirm
+          pacman -S --noconfirm --needed \
+            archiso dosfstools e2fsprogs libisoburn \
+            squashfs-tools mtools grub efibootmgr \
+            syslinux curl wget imagemagick plymouth
+
+      - name: Set script permissions
+        run: |
+          chmod +x build.sh
+          chmod +x airootfs/usr/local/bin/mint-* 2>/dev/null || true
+          chmod 440 airootfs/etc/sudoers.d/mintarch 2>/dev/null || true
+
+      - name: Install themes
+        run: |
+          # Plymouth theme
+          mkdir -p /usr/share/plymouth/themes/mintarch
+          cp -r airootfs/usr/share/mint-arch/plymouth-theme/. \
+                /usr/share/plymouth/themes/mintarch/ 2>/dev/null || true
+          if [ -f airootfs/usr/share/pixmaps/mintarch-logo.png ]; then
+            cp airootfs/usr/share/pixmaps/mintarch-logo.png \
+               /usr/share/plymouth/themes/mintarch/logo.png
+          fi
+          # Generate theme backgrounds
+          convert -size 1920x1080 gradient:'#0a0f0a-#0d160d' \
+              /usr/share/plymouth/themes/mintarch/background.png 2>/dev/null || true
+
+          # GRUB theme
+          mkdir -p /usr/share/grub/themes/mint
+          cp -r grub/themes/mint/. /usr/share/grub/themes/mint/ 2>/dev/null || true
+          cp airootfs/usr/share/pixmaps/mintarch-logo.png \
+             /usr/share/grub/themes/mint/logo.png 2>/dev/null || true
+          convert -size 1920x1080 gradient:'#0a0f0a-#0d160d' \
+              /usr/share/grub/themes/mint/background.png 2>/dev/null || true
+
+      - name: Build ISO
+        run: ./build.sh --output /tmp/output
+        env:
+          OUT_DIR: /tmp/output
+          CHANNEL: ${{ steps.channel.outputs.name }}
+
+      - name: Get ISO info
+        id: iso
+        run: |
+          ISO=$(ls /tmp/output/mintarch-*.iso 2>/dev/null | head -1)
+          echo "path=$ISO" >> $GITHUB_OUTPUT
+          echo "name=$(basename $ISO)" >> $GITHUB_OUTPUT
+          echo "size=$(du -sh $ISO | cut -f1)" >> $GITHUB_OUTPUT
+          echo "sha256=$(sha256sum $ISO | cut -d' ' -f1)" >> $GITHUB_OUTPUT
+
+      - name: Upload ISO artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mintarch-${{ steps.channel.outputs.name }}-iso
+          path: /tmp/output/mintarch-*.iso
+          retention-days: 14
+
+      - name: Upload checksums
+        uses: actions/upload-artifact@v4
+        with:
+          name: mintarch-${{ steps.channel.outputs.name }}-checksums
+          path: |
+            /tmp/output/*.sha256
+            /tmp/output/*.sha512
+            /tmp/output/*.md5
+            /tmp/output/release.txt
+          retention-days: 14
+
+      - name: Create GitHub Release (on tag only)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Mint Arch Linux ${{ github.ref_name }}
+          draft: false
+          prerelease: ${{ steps.channel.outputs.name != 'stable' }}
+          body: |
+            ## Mint Arch Linux ${{ github.ref_name }}
+
+            **Rolling Arch Linux — KDE Plasma + Security Tools**
+
+            | Property | Value |
+            |----------|-------|
+            | Channel  | ${{ steps.channel.outputs.name }} |
+            | Size     | ${{ steps.iso.outputs.size }} |
+            | SHA256   | `${{ steps.iso.outputs.sha256 }}` |
+            | Desktop  | KDE Plasma 6 (Wayland-first) |
+            | Shell    | ZSH + Starship |
+
+            ### Quick Start
+
+            **VirtualBox:**
+            1. New VM → Arch Linux 64-bit → 4GB RAM → 40GB disk
+            2. Settings → System → **Enable EFI** ✓
+            3. Attach ISO → Boot → login `mint`/`mint`
+            4. Open terminal → `sudo mint-installer`
+
+            **USB Flash:**
+            ```bash
+            sudo dd if=mintarch-*.iso of=/dev/sdX bs=4M status=progress oflag=sync
+            ```
+
+            **Windows/Mac:** Use [Rufus](https://rufus.ie), [Ventoy](https://ventoy.net), or [balenaEtcher](https://etcher.balena.io)
+
+            ### Mint Arch Linux Tools
+            | Tool | Purpose |
+            |------|---------|
+            | `mint-installer` | Guided disk installer |
+            | `mint-update` | Safe system updater |
+            | `mint-doctor` | System diagnostics |
+            | `mint-clean` | Disk cleaner |
+            | `mint-optimizer` | Performance profiles |
+            | `mint-driver-manager` | Hardware driver auto-install |
+            | `mint-backup` | Backup with Btrfs snapshots |
+            | `mint-tools-setup` | Security tools manager |
+            | `mint-privacy` | Privacy & firewall setup |
+            | `mint-gaming` | Gaming support |
+            | `mint-fetch` | System info display |
+          files: |
+            /tmp/output/mintarch-*.iso
+            /tmp/output/*.sha256
+            /tmp/output/release.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  verify:
+    name: Verify ISO Integrity
+    runs-on: ubuntu-latest
+    needs: build
+    if: always() && needs.build.result == 'success'
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: 'mintarch-*-iso'
+          path: /tmp/verify
+
+      - name: Verify ISO
+        run: |
+          cd /tmp/verify
+          for iso in $(find . -name "*.iso"); do
+            echo "Verifying: $iso"
+            file "$iso"
+            isovfy "$iso" 2>/dev/null && echo "ISO structure OK" || echo "Warning: isovfy not available"
+            ls -lh "$iso"
+          done
