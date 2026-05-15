@@ -1,0 +1,179 @@
+#!/usr/bin/env bash
+# =============================================================================
+# Mint OS - Gaming Mode Setup
+# Installs Steam, Proton, Wine, Lutris, and optimizes system for gaming
+# =============================================================================
+
+set -euo pipefail
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+info()    { echo -e "${GREEN}[+]${NC} $*"; }
+warn()    { echo -e "${YELLOW}[!]${NC} $*"; }
+ok()      { echo -e "${GREEN}[✓]${NC} $*"; }
+section() { echo -e "\n${BOLD}${CYAN}── $* ──${NC}\n"; }
+
+check_root() {
+    [[ "$EUID" -eq 0 ]] || { echo -e "${RED}Run as root: sudo mint-gaming${NC}"; exit 1; }
+}
+
+banner() {
+    echo -e "${CYAN}${BOLD}"
+    echo "  Mint OS Gaming Mode Setup"
+    echo -e "${NC}"
+    echo "  Installs Steam, Wine, Proton, Lutris, and performance tweaks."
+    echo ""
+}
+
+enable_multilib() {
+    section "Enabling 32-bit (multilib) Repository"
+    if ! grep -q "^\[multilib\]" /etc/pacman.conf; then
+        printf "\n[multilib]\nInclude = /etc/pacman.d/mirrorlist\n" >> /etc/pacman.conf
+        pacman -Sy
+    fi
+    ok "multilib enabled"
+}
+
+install_gaming_packages() {
+    section "Installing Gaming Packages"
+
+    info "Installing Steam..."
+    pacman -S --needed --noconfirm steam
+
+    info "Installing Wine & dependencies..."
+    pacman -S --needed --noconfirm \
+        wine wine-gecko wine-mono \
+        winetricks \
+        lib32-libpulse lib32-alsa-plugins \
+        lib32-mesa lib32-vulkan-icd-loader
+
+    info "Installing Lutris (game launcher)..."
+    pacman -S --needed --noconfirm lutris
+
+    info "Installing Heroic Games Launcher (Epic/GOG)..."
+    pacman -S --needed --noconfirm heroic-games-launcher-bin 2>/dev/null || \
+        warn "Heroic not in repos — install via: paru -S heroic-games-launcher-bin"
+
+    info "Installing MangoHud (performance overlay)..."
+    pacman -S --needed --noconfirm mangohud lib32-mangohud
+
+    info "Installing GameMode (CPU/GPU optimizer)..."
+    pacman -S --needed --noconfirm gamemode lib32-gamemode
+
+    info "Installing ProtonUp-Qt (Proton manager)..."
+    pacman -S --needed --noconfirm protonup-qt 2>/dev/null || true
+
+    info "Installing controller support..."
+    pacman -S --needed --noconfirm \
+        xboxdrv \
+        steam-native-runtime \
+        jstest-gtk
+
+    ok "Gaming packages installed"
+}
+
+configure_gamemode() {
+    section "Configuring GameMode"
+
+    cat > /etc/gamemode.ini <<'GAMEMODE'
+[general]
+reaper_freq=5
+defaultgov=performance
+desiredgov=performance
+igpu_desiredgov=performance
+softrealtime=auto
+renice=-10
+ioprio=0
+inhibit_screensaver=1
+
+[gpu]
+apply_gpu_optimisations=accept-responsibility
+gpu_device=0
+amd_performance_level=high
+GAMEMODE
+
+    # Add users to gamemode group
+    if getent group gamemode > /dev/null 2>&1; then
+        local real_user="${SUDO_USER:-}"
+        [[ -n "$real_user" ]] && usermod -aG gamemode "$real_user"
+    fi
+
+    systemctl enable gamemoded 2>/dev/null || true
+    ok "GameMode configured"
+}
+
+optimize_for_gaming() {
+    section "System Gaming Optimizations"
+
+    # Increase vm.max_map_count (needed by many games/Steam)
+    cat > /etc/sysctl.d/80-gamecompat.conf <<'SYSCTL'
+# Mint OS gaming optimizations
+vm.max_map_count = 2147483642
+vm.swappiness = 10
+kernel.split_lock_mitigate = 0
+SYSCTL
+    sysctl -p /etc/sysctl.d/80-gamecompat.conf
+
+    # Set CPU governor to performance
+    if command -v cpupower &>/dev/null; then
+        cpupower frequency-set -g performance 2>/dev/null || true
+    fi
+
+    # Enable esync/fsync for Proton (increase file descriptor limit)
+    cat >> /etc/security/limits.conf <<'LIMITS'
+# Gaming: needed for esync
+* soft nofile 1048576
+* hard nofile 1048576
+LIMITS
+
+    ok "Gaming optimizations applied (max_map_count, swappiness, file descriptors)"
+}
+
+install_vulkan() {
+    section "Vulkan & Graphics"
+    info "Installing Vulkan tools..."
+    pacman -S --needed --noconfirm \
+        vulkan-tools \
+        vulkan-icd-loader \
+        lib32-vulkan-icd-loader
+
+    ok "Vulkan ready"
+    vulkaninfo --summary 2>/dev/null || warn "No Vulkan-capable GPU detected"
+}
+
+show_summary() {
+    section "Gaming Mode Setup Complete"
+    echo ""
+    echo -e "  ${BOLD}Installed:${NC}"
+    echo "  [✓] Steam (with Proton)"
+    echo "  [✓] Wine + Winetricks"
+    echo "  [✓] Lutris (all-in-one game launcher)"
+    echo "  [✓] MangoHud (FPS/perf overlay)"
+    echo "  [✓] GameMode (auto CPU/GPU boost)"
+    echo "  [✓] Vulkan support"
+    echo ""
+    echo -e "  ${BOLD}Tips:${NC}"
+    echo "  - In Steam: Settings → Compatibility → Enable Steam Play for all titles"
+    echo "  - Run games with MangoHud: MANGOHUD=1 %command%"
+    echo "  - Run games with GameMode: gamemoderun %command%"
+    echo ""
+    warn "Reboot recommended for all changes to take effect."
+}
+
+main() {
+    banner
+    check_root
+    enable_multilib
+    install_gaming_packages
+    configure_gamemode
+    optimize_for_gaming
+    install_vulkan
+    show_summary
+}
+
+main "$@"
