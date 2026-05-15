@@ -1,0 +1,14 @@
+[Unit]
+Description=Mint OS First Boot Setup
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=!/etc/mint-configured
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/mint-firstboot
+RemainAfterExit=yes
+StandardOutput=journal+console
+
+[Install]
+WantedBy=multi-user.target
