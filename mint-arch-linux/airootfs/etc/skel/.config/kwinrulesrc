@@ -1,11 +1,29 @@
 [General]
-count=1
+count=3
 
 [1]
-Description=Mint Arch — Global translucency
-opacityactive=85
+Description=Mint Arch — Terminals translucent
+opacityactive=88
 opacityactiverule=2
-opacityinactive=75
+opacityinactive=70
 opacityinactiverule=2
-wmclass=.*
+wmclass=konsole|alacritty|kitty|xterm|urxvt
+wmclassmatch=3
+
+[2]
+Description=Mint Arch — File manager translucent
+opacityactive=92
+opacityactiverule=2
+opacityinactive=80
+opacityinactiverule=2
+wmclass=dolphin|nautilus|thunar
+wmclassmatch=3
+
+[3]
+Description=Mint Arch — System dialogs slight transparency
+opacityactive=95
+opacityactiverule=2
+opacityinactive=85
+opacityinactiverule=2
+wmclass=systemsettings|kcalc|krunner|plasmashell
 wmclassmatch=3
