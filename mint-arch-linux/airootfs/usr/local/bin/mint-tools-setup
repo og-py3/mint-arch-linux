@@ -2,6 +2,7 @@
 # =============================================================================
 # Mint Arch Linux - Security Tools Manager
 # Powered by BlackArch Linux Repository (2800+ tools)
+# Includes full Kali Linux tool equivalents
 # =============================================================================
 
 set -euo pipefail
@@ -16,16 +17,13 @@ NC='\033[0m'
 
 banner() {
     echo -e "${CYAN}"
-    echo "  ███╗   ███╗██╗███╗   ██╗████████╗     ████████╗ ██████╗  ██████╗ ██╗     ███████╗"
-    echo "  ████╗ ████║██║████╗  ██║╚══██╔══╝        ██╔══╝██╔═══██╗██╔═══██╗██║     ██╔════╝"
-    echo "  ██╔████╔██║██║██╔██╗ ██║   ██║           ██║   ██║   ██║██║   ██║██║     ███████╗"
-    echo "  ██║╚██╔╝██║██║██║╚██╗██║   ██║           ██║   ██║   ██║██║   ██║██║     ╚════██║"
-    echo "  ██║ ╚═╝ ██║██║██║ ╚████║   ██║           ██║   ╚██████╔╝╚██████╔╝███████╗███████║"
-    echo "  ╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝   ╚═╝           ╚═╝    ╚═════╝  ╚═════╝ ╚══════╝╚══════╝"
+    echo "  ╔╦╗╦╔╗╔╔╦╗  ╔═╗╦═╗╔═╗╦ ╦"
+    echo "  ║║║║║║║ ║   ╠═╣╠╦╝║  ╠═╣"
+    echo "  ╩ ╩╩╝╚╝ ╩   ╩ ╩╩╚═╚═╝╩ ╩"
     echo -e "${NC}"
     echo -e "  ${BOLD}${MINT}Mint Arch Linux — Security Tools Manager${NC}"
-    echo -e "  ${CYAN}Powered by BlackArch Linux Repository (2800+ tools)${NC}"
-    echo "  ────────────────────────────────────────────────────────"
+    echo -e "  ${CYAN}BlackArch (2800+ tools) + Full Kali Linux Equivalents${NC}"
+    echo "  ─────────────────────────────────────────────────────────"
     echo ""
 }
 
@@ -37,240 +35,404 @@ check_root() {
 }
 
 ensure_blackarch() {
-    if ! grep -q '\[blackarch\]' /etc/pacman.conf 2>/dev/null; then
+    if ! grep -q "\[blackarch\]" /etc/pacman.conf 2>/dev/null; then
         echo -e "${YELLOW}[!] BlackArch repo not found. Adding it now...${NC}"
         curl -O https://blackarch.org/strap.sh
-        chmod +x strap.sh
-        bash strap.sh
-        rm -f strap.sh
+        chmod +x strap.sh && bash strap.sh && rm -f strap.sh
         pacman -Sy --noconfirm
-        echo -e "${GREEN}[✓] BlackArch repo added (2800+ tools available)${NC}"
+        echo -e "${GREEN}[✓] BlackArch repo ready (2800+ tools available)${NC}"
     else
+        pacman -Sy --noconfirm 2>/dev/null
         echo -e "${GREEN}[✓] BlackArch repo ready${NC}"
     fi
 }
 
 install_group() {
-    local label="$1"
-    local group="$2"
-    echo -e "${GREEN}[+] Installing: ${BOLD}$label${NC} (${CYAN}blackarch-${group}${NC})"
+    local label="$1" group="$2"
+    echo -e "${GREEN}[+] ${BOLD}$label${NC} → blackarch-${group}"
     pacman -S --needed --noconfirm "blackarch-${group}" 2>/dev/null || {
         echo -e "${YELLOW}[!] Group install failed, trying individual packages...${NC}"
-        pacman -Sg "blackarch-${group}" 2>/dev/null | awk '{print $2}' | \
+        pacman -Sg "blackarch-${group}" 2>/dev/null | awk "{print \$2}" |
             xargs -r pacman -S --needed --noconfirm 2>/dev/null || true
     }
-    echo -e "${GREEN}[✓] $label installed${NC}"
+    echo -e "${GREEN}[✓] $label done${NC}"
 }
 
 install_pkgs() {
     local label="$1"; shift
-    local pkgs=("$@")
-    echo -e "${GREEN}[+] Installing: ${BOLD}$label${NC}"
-    pacman -S --needed --noconfirm "${pkgs[@]}" 2>/dev/null || true
+    echo -e "${GREEN}[+] ${BOLD}$label${NC}"
+    pacman -S --needed --noconfirm "$@" 2>/dev/null || true
+    echo -e "${GREEN}[✓] $label done${NC}"
 }
 
-# ─── BlackArch Groups (2800+ tools total) ─────────────────────────────────────
+# =============================================================================
+# BLACKARCH GROUPS (2800+ tools)
+# =============================================================================
+cat_exploitation()    { install_group "Exploitation"                exploitation; }
+cat_fuzzer()          { install_group "Fuzzers"                      fuzzer; }
+cat_forensic()        { install_group "Forensics & Recovery"         forensic; }
+cat_recon()           { install_group "Reconnaissance"               recon; }
+cat_scanner()         { install_group "Scanners & Port Scanners"     scanner; }
+cat_webapp()          { install_group "Web Application Testing"      webapp; }
+cat_networking()      { install_group "Networking"                   networking; }
+cat_crypto()          { install_group "Cryptography & Encoding"      crypto; }
+cat_misc()            { install_group "Miscellaneous"                misc; }
+cat_reversing()       { install_group "Reverse Engineering"          reversing; }
+cat_mobile()          { install_group "Mobile Security"              mobile; }
+cat_cracker()         { install_group "Password Crackers"            cracker; }
+cat_sniffer()         { install_group "Sniffers & Traffic Analysis"  sniffer; }
+cat_wireless()        { install_group "Wireless & WiFi"              wireless; }
+cat_social()          { install_group "Social Engineering"           social; }
+cat_voip()            { install_group "VoIP Security"                voip; }
+cat_windows()         { install_group "Windows / AD Attacks"         windows; }
+cat_anti_forensic()   { install_group "Anti-Forensics"               anti-forensic; }
+cat_backdoor()        { install_group "Backdoors & Trojans"          backdoor; }
+cat_code_audit()      { install_group "Code Audit & SAST"            code-audit; }
+cat_config()          { install_group "Configuration Auditing"       config; }
+cat_decompiler()      { install_group "Decompilers"                  decompiler; }
+cat_defensive()       { install_group "Defensive & Blue Team"        defensive; }
+cat_disassembler()    { install_group "Disassemblers"                disassembler; }
+cat_dos()             { install_group "DoS & Stress Testing"         dos; }
+cat_drone()           { install_group "Drone / RF Hacking"           drone; }
+cat_fingerprint()     { install_group "Fingerprinting"               fingerprint; }
+cat_firmware()        { install_group "Firmware Analysis"            firmware; }
+cat_hardware()        { install_group "Hardware Hacking"             hardware; }
+cat_honeypot()        { install_group "Honeypots"                    honeypot; }
+cat_ids()             { install_group "IDS / IPS"                    ids; }
+cat_keylogger()       { install_group "Keyloggers"                   keylogger; }
+cat_malware()         { install_group "Malware Analysis"             malware; }
+cat_nfc()             { install_group "NFC & RFID"                   nfc; }
+cat_proxy()           { install_group "Proxies & Traffic Tools"      proxy; }
+cat_tunnel()          { install_group "Tunneling & Evasion"          tunnel; }
+cat_unpacker()        { install_group "Unpackers & Decryptors"       unpacker; }
+cat_windows2()        { install_group "Windows Escalation"           windows; }
 
-cat_exploitation()       { install_group "Exploitation"                exploitation; }
-cat_fuzzer()             { install_group "Fuzzers"                      fuzzer; }
-cat_forensic()           { install_group "Forensics & Recovery"         forensic; }
-cat_recon()              { install_group "Reconnaissance"               recon; }
-cat_scanner()            { install_group "Scanners & Port Scanners"     scanner; }
-cat_webapp()             { install_group "Web Application Testing"      webapp; }
-cat_networking()         { install_group "Networking"                   networking; }
-cat_crypto()             { install_group "Cryptography & Encoding"      crypto; }
-cat_misc()               { install_group "Miscellaneous"                misc; }
-cat_reversing()          { install_group "Reverse Engineering"          reversing; }
-cat_mobile()             { install_group "Mobile Security"              mobile; }
-cat_cracker()            { install_group "Password Crackers"            cracker; }
-cat_sniffer()            { install_group "Sniffers & Traffic Analysis"  sniffer; }
-cat_wireless()           { install_group "Wireless & WiFi"              wireless; }
-cat_social()             { install_group "Social Engineering"           social; }
-cat_voip()               { install_group "VoIP Security"                voip; }
-cat_windows()            { install_group "Windows / AD Attacks"         windows; }
-cat_anti_forensic()      { install_group "Anti-Forensics"               anti-forensic; }
-cat_backdoor()           { install_group "Backdoors & Trojans"          backdoor; }
-cat_code_audit()         { install_group "Code Audit & SAST"            code-audit; }
-cat_config()             { install_group "Configuration Auditing"       config; }
-cat_decompiler()         { install_group "Decompilers"                  decompiler; }
-cat_defensive()          { install_group "Defensive & Blue Team"        defensive; }
-cat_disassembler()       { install_group "Disassemblers"                disassembler; }
-cat_dos()                { install_group "DoS & Stress Testing"         dos; }
-cat_drone()              { install_group "Drone / RF Hacking"           drone; }
-cat_exploitation_client(){ install_group "Client-Side Exploitation"     exploitation-client; }
-cat_fingerprint()        { install_group "Fingerprinting"               fingerprint; }
-cat_firmware()           { install_group "Firmware Analysis"            firmware; }
-cat_hardware()           { install_group "Hardware Hacking"             hardware; }
-cat_honeypot()           { install_group "Honeypots"                    honeypot; }
-cat_ids()                { install_group "IDS / IPS"                    ids; }
-cat_keylogger()          { install_group "Keyloggers"                   keylogger; }
-cat_malware()            { install_group "Malware Analysis"             malware; }
-cat_networking2()        { install_group "Network Traffic Analysis"     networking; }
-cat_nfc()                { install_group "NFC & RFID"                   nfc; }
-cat_osint()              { install_group "OSINT"                        osint; }
-cat_packer()             { install_group "Packers & Obfuscators"        packer; }
-cat_proxy()              { install_group "Proxies & Tunnels"            proxy; }
-cat_radio()              { install_group "Radio / SDR"                  radio; }
-cat_spoof()              { install_group "Spoofing"                     spoof; }
-cat_stego()              { install_group "Steganography"                stego; }
-cat_threat_modeling()    { install_group "Threat Modeling"              threat-modeling; }
-cat_tunnel()             { install_group "Tunneling"                    tunnel; }
-cat_unpacker()           { install_group "Unpackers"                    unpacker; }
-cat_vehicle()            { install_group "Vehicle / CAN Bus"            vehicle; }
-cat_windows_priv()       { install_group "Windows Privilege Escalation" windows; }
+# =============================================================================
+# KALI LINUX EQUIVALENT TOOLS (mapped to BlackArch / Arch packages)
+# Organized by Kali metapackage categories
+# =============================================================================
 
-install_everything() {
-    echo -e "${YELLOW}[!] Installing the FULL BlackArch suite (2800+ tools).${NC}"
-    echo -e "${YELLOW}    This will download several GB and take a long time.${NC}"
+kali_info_gathering() {
+    install_pkgs "Kali: Information Gathering" \
+        nmap masscan netdiscover arp-scan hping fping \
+        dmitry p0f unicornscan \
+        ncrack onesixtyone \
+        smbmap nbtscan enum4linux enum4linux-ng \
+        smtp-user-enum snmpcheck \
+        sslyze sslscan \
+        theharvester amass recon-ng spiderfoot \
+        dnsrecon dnsenum fierce dnschef \
+        sublist3r subfinder httpx \
+        whatweb wafw00f \
+        maltego netmask
+}
+
+kali_vulnerability() {
+    install_pkgs "Kali: Vulnerability Scanning" \
+        nmap nikto wapiti openvas \
+        legion unix-privesc-check \
+        oscanner sidguesser \
+        voiphopper sipvicious \
+        lynis
+}
+
+kali_web_apps() {
+    install_pkgs "Kali: Web Application Testing" \
+        sqlmap burpsuite zaproxy \
+        nikto dirb gobuster ffuf wfuzz feroxbuster \
+        commix wapiti skipfish \
+        davtest padbuster \
+        eyewitness cutycapt \
+        weevely wpscan \
+        xsser xsssniper \
+        httprint httrack
+}
+
+kali_passwords() {
+    install_pkgs "Kali: Password & Hash Cracking" \
+        hashcat john hydra medusa ncrack \
+        crunch cewl cupp wordlistctl \
+        seclists rockyou \
+        rainbowcrack \
+        hash-identifier \
+        pdfcrack fcrackzip \
+        samdump2 ophcrack \
+        mimikatz
+}
+
+kali_wireless() {
+    install_pkgs "Kali: Wireless & WiFi" \
+        aircrack-ng kismet wireshark-qt wireshark-cli \
+        bettercap mdk4 pixiewps reaver \
+        hcxdumptool hcxtools wavemon \
+        wifite wifiphisher airgeddon \
+        hostapd-wpe cowpatty \
+        fern-wifi-cracker \
+        bluez bluez-utils \
+        btscanner blueranger bluesnarfer \
+        spooftooph ubertooth
+}
+
+kali_reverse_engineering() {
+    install_pkgs "Kali: Reverse Engineering" \
+        radare2 ghidra cutter \
+        gdb pwndbg peda \
+        ltrace strace valgrind \
+        apktool dex2jar jadx \
+        edb javasnoop \
+        nasm yasm \
+        objdump binutils
+}
+
+kali_exploitation() {
+    install_pkgs "Kali: Exploitation" \
+        metasploit armitage \
+        exploitdb python-pwntools \
+        impacket crackmapexec \
+        routersploit beef \
+        shellter veil \
+        yersinia \
+        msfpc
+}
+
+kali_sniffing_spoofing() {
+    install_pkgs "Kali: Sniffing & Spoofing" \
+        wireshark-qt wireshark-cli tcpdump \
+        ettercap dsniff bettercap \
+        mitmproxy sslstrip arpwatch \
+        responder netsniff-ng \
+        driftnet scapy \
+        yersinia macchanger
+}
+
+kali_post_exploitation() {
+    install_pkgs "Kali: Post-Exploitation" \
+        metasploit crackmapexec evil-winrm \
+        smbclient bloodhound neo4j \
+        mimikatz powersploit \
+        nishang empire \
+        weevely laudanum \
+        intersect
+}
+
+kali_forensics() {
+    install_pkgs "Kali: Forensics & Recovery" \
+        autopsy sleuthkit \
+        binwalk foremost scalpel \
+        testdisk dc3dd ddrescue \
+        exiftool bulk-extractor \
+        volatility3 \
+        recoverjpeg extundelete \
+        pdf-parser python-oletools pdfid \
+        dff guymager \
+        chkrootkit rkhunter
+}
+
+kali_reporting() {
+    install_pkgs "Kali: Reporting & Documentation" \
+        cherrytree cutycapt \
+        recordmydesktop \
+        python-docutils
+}
+
+kali_social_engineering() {
+    install_pkgs "Kali: Social Engineering" \
+        set \
+        msfpc
+}
+
+kali_osint() {
+    install_pkgs "Kali: OSINT" \
+        maltego recon-ng spiderfoot \
+        theharvester sherlock \
+        metagoofil osrframework \
+        photon eyewitness
+}
+
+kali_cloud() {
+    install_pkgs "Kali: Cloud & Container Security" \
+        pacu scout-suite prowler \
+        trivy grype syft dive \
+        kube-bench kube-hunter
+}
+
+kali_hardware() {
+    install_pkgs "Kali: Hardware & IoT" \
+        flashrom binwalk \
+        openocd avrdude \
+        ubertooth \
+        hackrf \
+        gnuradio
+}
+
+install_all_kali() {
     echo ""
-    read -r -p "Are you absolutely sure? (yes/N): " confirm
-    [[ "$confirm" == "yes" ]] || { echo "Aborted."; return; }
-    pacman -S --needed --noconfirm blackarch
-    echo -e "${GREEN}[✓] All 2800+ BlackArch tools installed!${NC}"
+    echo -e "${MINT}${BOLD}Installing ALL Kali Linux equivalent tools...${NC}"
+    echo -e "${CYAN}This maps all Kali metapackages to BlackArch equivalents.${NC}"
+    echo ""
+    kali_info_gathering
+    kali_vulnerability
+    kali_web_apps
+    kali_passwords
+    kali_wireless
+    kali_reverse_engineering
+    kali_exploitation
+    kali_sniffing_spoofing
+    kali_post_exploitation
+    kali_forensics
+    kali_reporting
+    kali_social_engineering
+    kali_osint
+    kali_cloud
+    kali_hardware
+    echo ""
+    echo -e "${GREEN}${BOLD}All Kali-equivalent tools installed!${NC}"
 }
 
-install_top100() {
-    echo -e "${YELLOW}[!] Installing the most popular 100 security tools...${NC}"
-    install_pkgs "Top 100 Tools" \
-        nmap masscan netdiscover arp-scan whois dnsutils traceroute mtr \
-        sqlmap nikto gobuster ffuf wfuzz dirb burpsuite zaproxy \
-        hashcat john hydra medusa crunch cewl \
-        aircrack-ng kismet wireshark-qt wireshark-cli bettercap mdk4 reaver hcxtools hcxdumptool \
-        metasploit exploitdb searchsploit pwntools \
-        bloodhound crackmapexec evil-winrm impacket \
-        autopsy sleuthkit binwalk foremost testdisk volatility3 exiftool \
-        radare2 ghidra cutter gdb pwndbg ltrace strace \
-        tcpdump dsniff ettercap responder mitmproxy sslstrip \
-        ncat socat proxychains-ng tor openvpn wireguard-tools sslscan \
-        steghide stegseek openssl age gnupg \
-        maltego recon-ng theharvester amass subfinder nuclei \
-        set gophish \
-        trivy dive grype syft kubectl \
-        apktool jadx frida adb androguard \
-        snort suricata zeek rkhunter lynis clamav auditd \
-        ffuf radamsa \
-        sqlmap redis shodan
-    echo -e "${GREEN}[✓] Top 100 tools installed!${NC}"
+install_all_blackarch() {
+    echo ""
+    echo -e "${MINT}${BOLD}Installing ALL BlackArch groups (2800+ tools)...${NC}"
+    echo -e "${YELLOW}Warning: This requires ~50GB disk space and several hours.${NC}"
+    echo ""
+    read -r -p "Continue? [y/N]: " confirm
+    [[ "$confirm" =~ ^[Yy]$ ]] || exit 0
+    install_group "ALL BlackArch Tools" blackarch
 }
 
-# ─── Menu ─────────────────────────────────────────────────────────────────────
+# =============================================================================
+# INTERACTIVE MENU
+# =============================================================================
 
 show_menu() {
-    echo -e "${BOLD}Select a tool category to install:${NC}"
+    echo -e "${BOLD}Choose what to install:${NC}"
     echo ""
-    echo -e "  ${CYAN}── Quick Install ──────────────────────────────────────${NC}"
-    echo "   T)  Top 100 Most Popular Tools     (fast, ~2GB)"
-    echo "   A)  ALL BlackArch Tools             (2800+ tools, ~20GB)"
+    echo -e "  ${CYAN}[1]${NC}  All Kali Linux equivalent tools         ${YELLOW}(recommended, ~5-15GB)${NC}"
+    echo -e "  ${CYAN}[2]${NC}  All BlackArch tools (2800+)             ${YELLOW}(full suite, ~50GB)${NC}"
     echo ""
-    echo -e "  ${CYAN}── BlackArch Groups ───────────────────────────────────${NC}"
-    echo "   1)  Exploitation                   40)  Anti-Forensics"
-    echo "   2)  Fuzzers                        41)  Backdoors & Trojans"
-    echo "   3)  Forensics & Recovery           42)  Code Audit / SAST"
-    echo "   4)  Reconnaissance                 43)  Configuration Auditing"
-    echo "   5)  Scanners & Port Scanners       44)  Decompilers"
-    echo "   6)  Web Application Testing        45)  Defensive / Blue Team"
-    echo "   7)  Networking                     46)  Disassemblers"
-    echo "   8)  Cryptography & Encoding        47)  DoS & Stress Testing"
-    echo "   9)  Miscellaneous                  48)  Drone / RF Hacking"
-    echo "  10)  Reverse Engineering            49)  Client-Side Exploitation"
-    echo "  11)  Mobile Security                50)  Fingerprinting"
-    echo "  12)  Password Crackers              51)  Firmware Analysis"
-    echo "  13)  Sniffers & Traffic Analysis    52)  Hardware Hacking"
-    echo "  14)  Wireless & WiFi                53)  Honeypots"
-    echo "  15)  Social Engineering             54)  IDS / IPS"
-    echo "  16)  VoIP Security                  55)  Keyloggers"
-    echo "  17)  Windows / AD Attacks           56)  Malware Analysis"
-    echo "  18)  OSINT                          57)  NFC & RFID"
-    echo "  19)  Proxy & Tunneling              58)  Packers & Obfuscators"
-    echo "  20)  Steganography                  59)  Radio / SDR"
-    echo "  21)  Spoofing                       60)  Vehicle / CAN Bus"
-    echo "  22)  Threat Modeling                61)  Unpackers"
+    echo -e "  ${CYAN}── Kali Categories ──────────────────────────────────────${NC}"
+    echo -e "  ${CYAN}[3]${NC}  Information Gathering"
+    echo -e "  ${CYAN}[4]${NC}  Vulnerability Scanning"
+    echo -e "  ${CYAN}[5]${NC}  Web Application Testing"
+    echo -e "  ${CYAN}[6]${NC}  Password & Hash Cracking"
+    echo -e "  ${CYAN}[7]${NC}  Wireless & WiFi"
+    echo -e "  ${CYAN}[8]${NC}  Reverse Engineering"
+    echo -e "  ${CYAN}[9]${NC}  Exploitation Frameworks"
+    echo -e "  ${CYAN}[10]${NC} Sniffing & Spoofing"
+    echo -e "  ${CYAN}[11]${NC} Post-Exploitation"
+    echo -e "  ${CYAN}[12]${NC} Forensics & Recovery"
+    echo -e "  ${CYAN}[13]${NC} Social Engineering"
+    echo -e "  ${CYAN}[14]${NC} OSINT"
+    echo -e "  ${CYAN}[15]${NC} Cloud & Container Security"
+    echo -e "  ${CYAN}[16]${NC} Hardware & IoT"
     echo ""
-    echo -e "   ${BOLD}L)  List all tools in a group${NC}"
-    echo -e "   ${BOLD}S)  Search for a specific tool${NC}"
-    echo -e "   ${BOLD}Q)  Quit${NC}"
+    echo -e "  ${CYAN}── BlackArch Groups ─────────────────────────────────────${NC}"
+    echo -e "  ${CYAN}[17]${NC} Exploitation (BlackArch)"
+    echo -e "  ${CYAN}[18]${NC} Fuzzers"
+    echo -e "  ${CYAN}[19]${NC} Forensics (BlackArch)"
+    echo -e "  ${CYAN}[20]${NC} Scanners"
+    echo -e "  ${CYAN}[21]${NC} Malware Analysis"
+    echo -e "  ${CYAN}[22]${NC} Backdoors"
+    echo -e "  ${CYAN}[23]${NC} Honeypots"
+    echo -e "  ${CYAN}[24]${NC} IDS / IPS"
+    echo -e "  ${CYAN}[25]${NC} VoIP Security"
+    echo -e "  ${CYAN}[26]${NC} Windows / Active Directory"
+    echo -e "  ${CYAN}[27]${NC} Hardware Hacking (BlackArch)"
+    echo -e "  ${CYAN}[28]${NC} Firmware Analysis"
+    echo -e "  ${CYAN}[29]${NC} NFC & RFID"
+    echo -e "  ${CYAN}[30]${NC} Drone / RF Hacking"
     echo ""
+    echo -e "  ${CYAN}[q]${NC}  Quit"
+    echo ""
+    read -r -p "  Choice: " choice
+    echo ""
+
+    case "$choice" in
+        1)  install_all_kali ;;
+        2)  install_all_blackarch ;;
+        3)  kali_info_gathering ;;
+        4)  kali_vulnerability ;;
+        5)  kali_web_apps ;;
+        6)  kali_passwords ;;
+        7)  kali_wireless ;;
+        8)  kali_reverse_engineering ;;
+        9)  kali_exploitation ;;
+        10) kali_sniffing_spoofing ;;
+        11) kali_post_exploitation ;;
+        12) kali_forensics ;;
+        13) kali_social_engineering ;;
+        14) kali_osint ;;
+        15) kali_cloud ;;
+        16) kali_hardware ;;
+        17) cat_exploitation ;;
+        18) cat_fuzzer ;;
+        19) cat_forensic ;;
+        20) cat_scanner ;;
+        21) cat_malware ;;
+        22) cat_backdoor ;;
+        23) cat_honeypot ;;
+        24) cat_ids ;;
+        25) cat_voip ;;
+        26) cat_windows ;;
+        27) cat_hardware ;;
+        28) cat_firmware ;;
+        29) cat_nfc ;;
+        30) cat_drone ;;
+        q|Q) echo "Bye!"; exit 0 ;;
+        *) echo -e "${RED}Invalid choice${NC}" ;;
+    esac
 }
 
-list_group_tools() {
-    read -r -p "Enter BlackArch group name (e.g. webapp, recon, cracker): " grp
-    echo ""
-    echo -e "${CYAN}Tools in blackarch-${grp}:${NC}"
-    pacman -Sg "blackarch-${grp}" 2>/dev/null | awk '{print "  - "$2}' || \
-        echo -e "${RED}Group not found. Run: pacman -Sg | grep blackarch${NC}"
-}
-
-search_tool() {
-    read -r -p "Search for tool: " term
-    echo ""
-    echo -e "${CYAN}Results for '${term}':${NC}"
-    pacman -Ss "blackarch" 2>/dev/null | grep -i "$term" | head -30 || true
-    pacman -Ss "$term" 2>/dev/null | grep -i "$term" | head -20 || true
-}
+# =============================================================================
+# MAIN
+# =============================================================================
 
 main() {
     banner
     check_root
     ensure_blackarch
 
+    # Non-interactive: pass category as argument
+    if [ "$#" -gt 0 ]; then
+        case "$1" in
+            --all-kali)       install_all_kali ;;
+            --all-blackarch)  install_all_blackarch ;;
+            --info)           kali_info_gathering ;;
+            --vuln)           kali_vulnerability ;;
+            --web)            kali_web_apps ;;
+            --passwords)      kali_passwords ;;
+            --wireless)       kali_wireless ;;
+            --reversing)      kali_reverse_engineering ;;
+            --exploit)        kali_exploitation ;;
+            --sniff)          kali_sniffing_spoofing ;;
+            --postexploit)    kali_post_exploitation ;;
+            --forensics)      kali_forensics ;;
+            --social)         kali_social_engineering ;;
+            --osint)          kali_osint ;;
+            --cloud)          kali_cloud ;;
+            --hardware)       kali_hardware ;;
+            *)
+                echo "Usage: mint-tools-setup [--all-kali] [--all-blackarch]"
+                echo "       [--info] [--vuln] [--web] [--passwords] [--wireless]"
+                echo "       [--reversing] [--exploit] [--sniff] [--postexploit]"
+                echo "       [--forensics] [--social] [--osint] [--cloud] [--hardware]"
+                exit 1
+                ;;
+        esac
+        exit 0
+    fi
+
+    # Interactive menu (loop)
     while true; do
         show_menu
-        read -r -p "Choice: " choice
         echo ""
-        case "$choice" in
-            [Tt]) install_top100 ;;
-            [Aa]) install_everything ;;
-            1)  cat_exploitation ;;
-            2)  cat_fuzzer ;;
-            3)  cat_forensic ;;
-            4)  cat_recon ;;
-            5)  cat_scanner ;;
-            6)  cat_webapp ;;
-            7)  cat_networking ;;
-            8)  cat_crypto ;;
-            9)  cat_misc ;;
-            10) cat_reversing ;;
-            11) cat_mobile ;;
-            12) cat_cracker ;;
-            13) cat_sniffer ;;
-            14) cat_wireless ;;
-            15) cat_social ;;
-            16) cat_voip ;;
-            17) cat_windows ;;
-            18) cat_osint ;;
-            19) cat_proxy ;;
-            20) cat_stego ;;
-            21) cat_spoof ;;
-            22) cat_threat_modeling ;;
-            40) cat_anti_forensic ;;
-            41) cat_backdoor ;;
-            42) cat_code_audit ;;
-            43) cat_config ;;
-            44) cat_decompiler ;;
-            45) cat_defensive ;;
-            46) cat_disassembler ;;
-            47) cat_dos ;;
-            48) cat_drone ;;
-            49) cat_exploitation_client ;;
-            50) cat_fingerprint ;;
-            51) cat_firmware ;;
-            52) cat_hardware ;;
-            53) cat_honeypot ;;
-            54) cat_ids ;;
-            55) cat_keylogger ;;
-            56) cat_malware ;;
-            57) cat_nfc ;;
-            58) cat_packer ;;
-            59) cat_radio ;;
-            60) cat_vehicle ;;
-            61) cat_unpacker ;;
-            [Ll]) list_group_tools ;;
-            [Ss]) search_tool ;;
-            [Qq]) echo -e "${GREEN}Goodbye!${NC}"; exit 0 ;;
-            *) echo -e "${RED}[!] Invalid choice.${NC}" ;;
-        esac
-        echo ""
+        read -r -p "Install more? [y/N]: " again
+        [[ "$again" =~ ^[Yy]$ ]] || break
     done
+
+    echo ""
+    echo -e "${GREEN}${BOLD}Done! All selected tools installed.${NC}"
+    echo -e "${CYAN}Tip: Run${NC} sudo mint-tools-setup --all-kali ${CYAN}to install everything non-interactively.${NC}"
+    echo ""
 }
 
 main "$@"
