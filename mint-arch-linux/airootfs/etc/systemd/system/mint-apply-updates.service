@@ -1,0 +1,19 @@
+[Unit]
+Description=Mint Arch Linux — Apply Pre-Downloaded System Updates
+Documentation=https://github.com/og-py3/mint-arch-linux
+Before=display-manager.service sddm.service lightdm.service gdm.service
+After=local-fs.target sysinit.target pacman-init.service
+ConditionPathExists=/var/lib/mint-arch/updates-ready
+DefaultDependencies=no
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/mint-apply-updates
+RemainAfterExit=yes
+StandardOutput=journal+console
+StandardError=journal+console
+TimeoutStartSec=600
+Environment=LANG=C
+
+[Install]
+WantedBy=sysinit.target
