@@ -1,7 +1,7 @@
 # =============================================================================
-# Mint Arch Linux — Pre-installed Security Tools (BlackArch + Arch repos)
-# These are bundled into the ISO at build time (works offline after install).
-# Full BlackArch suite (2800+ tools) available via: sudo mint-tools-setup
+# Mint Arch Linux — Pre-installed Security Tools
+# BlackArch + Arch repos — bundled in ISO, works fully offline after install.
+# Kali Linux equivalent tools included. Run: sudo mint-tools-setup for 2800+ more.
 # =============================================================================
 
 # ── Information Gathering ────────────────────────────────────────────────────
@@ -13,12 +13,22 @@ whois
 bind
 traceroute
 mtr
-smbmap
+fping
+hping
 nbtscan
 onesixtyone
-fping
+p0f
+dmitry
+ncrack
+smtp-user-enum
+snmpcheck
+smbmap
+enum4linux
+enum4linux-ng
+sslyze
+sslscan
 
-# ── Reconnaissance ───────────────────────────────────────────────────────────
+# ── Web Reconnaissance ──────────────────────────────────────────────────────
 whatweb
 wafw00f
 dnsrecon
@@ -28,6 +38,10 @@ theharvester
 amass
 subfinder
 httpx
+dnschef
+eyewitness
+photon
+wpscan
 
 # ── Web Application Testing ──────────────────────────────────────────────────
 sqlmap
@@ -36,21 +50,33 @@ dirb
 gobuster
 ffuf
 wfuzz
+feroxbuster
 zaproxy
+burpsuite
 wapiti
 commix
 skipfish
+padbuster
+davtest
+weevely
 
 # ── Password & Hash Cracking ─────────────────────────────────────────────────
 hashcat
 john
 hydra
 medusa
+ncrack
 crunch
 cewl
+cupp
 hash-identifier
 pdfcrack
 fcrackzip
+rainbowcrack
+samdump2
+ophcrack
+seclists
+rockyou
 
 # ── Wireless & WiFi ──────────────────────────────────────────────────────────
 aircrack-ng
@@ -64,6 +90,10 @@ reaver
 hcxdumptool
 hcxtools
 wavemon
+wifite
+wifiphisher
+airgeddon
+hostapd-wpe
 
 # ── Exploitation ─────────────────────────────────────────────────────────────
 metasploit
@@ -71,24 +101,64 @@ exploitdb
 python-pwntools
 impacket
 python-pycryptodome
+armitage
+routersploit
+beef
+shellter
+veil
 
 # ── Post-Exploitation ────────────────────────────────────────────────────────
 crackmapexec
 evil-winrm
 smbclient
 bloodhound
+mimikatz
+neo4j
+
+# ── Sniffing, Spoofing & MitM ────────────────────────────────────────────────
+tcpdump
+dsniff
+ettercap
+responder
+arpwatch
+mitmproxy
+sslstrip
+scapy
+netsniff-ng
+driftnet
+yersinia
+bettercap
+
+# ── Network Tools ────────────────────────────────────────────────────────────
+socat
+openbsd-netcat
+proxychains-ng
+tor
+torsocks
+openssl
+gnutls
+iodine
+ptunnel
+sshuttle
+redsocks
 
 # ── Forensics & Recovery ─────────────────────────────────────────────────────
 autopsy
 sleuthkit
 binwalk
 foremost
+scalpel
 testdisk
 dc3dd
 ddrescue
 exiftool
 bulk-extractor
 volatility3
+recoverjpeg
+extundelete
+pdf-parser
+python-oletools
+pdfid
 
 # ── Reverse Engineering ──────────────────────────────────────────────────────
 radare2
@@ -99,26 +169,10 @@ pwndbg
 ltrace
 strace
 valgrind
+apktool
 dex2jar
 jadx
-
-# ── Sniffing & Spoofing ──────────────────────────────────────────────────────
-tcpdump
-dsniff
-ettercap
-responder
-arpwatch
-mitmproxy
-sslstrip
-
-# ── Network Tools ────────────────────────────────────────────────────────────
-socat
-proxychains-ng
-tor
-torsocks
-sslscan
-openssl
-gnutls
+edb
 
 # ── Cryptography & Steganography ─────────────────────────────────────────────
 steghide
@@ -126,31 +180,49 @@ stegseek
 age
 gnupg
 xortool
+outguess
+stegosuite
 
 # ── OSINT ────────────────────────────────────────────────────────────────────
 maltego
 recon-ng
 sherlock
 spiderfoot
+metagoofil
+osrframework
 
-# ── Social Engineering ────────────────────────────────────────────────────────
+# ── Social Engineering ───────────────────────────────────────────────────────
 set
 
 # ── Fuzzing ──────────────────────────────────────────────────────────────────
 radamsa
 afl
-
-# ── Container Security ───────────────────────────────────────────────────────
-trivy
-dive
-grype
-syft
+boofuzz
 
 # ── Mobile Security ──────────────────────────────────────────────────────────
 dex2jar
 jadx
 android-tools
 androguard
+apktool
+
+# ── Container & Cloud Security ───────────────────────────────────────────────
+trivy
+dive
+grype
+syft
+pacu
+scout-suite
+prowler
+
+# ── Malware Analysis ─────────────────────────────────────────────────────────
+yara
+python-yara
+clamav
+
+# ── Firmware Analysis ────────────────────────────────────────────────────────
+binwalk
+flashrom
 
 # ── Defensive & Monitoring ───────────────────────────────────────────────────
 snort
@@ -158,14 +230,9 @@ suricata
 rkhunter
 chkrootkit
 lynis
-clamav
-
-# ── Malware Analysis ─────────────────────────────────────────────────────────
-yara
-
-# ── Firmware Analysis ────────────────────────────────────────────────────────
-binwalk
-flashrom
+aide
 
 # ── Wordlists & Resources ────────────────────────────────────────────────────
 wordlistctl
+seclists
+rockyou
