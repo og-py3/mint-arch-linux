@@ -1,0 +1,3 @@
+wallpaper_image = Image("logo.png");
+wallpaper_sprite = Sprite(wallpaper_image);
+wallpaper_sprite.SetZ(-10000);
