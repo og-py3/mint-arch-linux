@@ -5,7 +5,6 @@
 # Game launchers
 steam
 lutris
-heroic-games-launcher
 
 # Wine / Proton
 wine
