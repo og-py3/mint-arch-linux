@@ -1,6 +1,9 @@
 {
   "name": "Mint Arch Linux Desktop",
-  "build": { "dockerfile": "../Dockerfile" },
+  "build": {
+    "dockerfile": "../Dockerfile",
+    "context": ".."
+  },
   "forwardPorts": [3000],
   "portsAttributes": {
     "3000": {
@@ -8,9 +11,14 @@
       "onAutoForward": "openBrowser"
     }
   },
-  "postStartCommand": "chmod +x /workspaces/mint-arch-desktop/scripts/*.sh && bash /workspaces/mint-arch-desktop/scripts/start-desktop.sh",
-  "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
-  },
-  "remoteUser": "root"
+  "postStartCommand": "bash /workspaces/mint-arch-linux/mint-arch-desktop/scripts/init-desktop.sh",
+  "remoteUser": "root",
+  "containerEnv": {
+    "TITLE": "Mint Arch Linux",
+    "CUSTOM_USER": "mint",
+    "PASSWORD": "mint",
+    "PUID": "1000",
+    "PGID": "1000",
+    "TZ": "UTC"
+  }
 }
