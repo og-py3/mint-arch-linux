@@ -1,0 +1,81 @@
+name: Attach ISO to Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'Actions run ID that produced the ISO (run #288 = 25957594755)'
+        required: true
+        default: '25957594755'
+      tag:
+        description: 'Release tag to attach the ISO to (e.g. v2026.05)'
+        required: true
+        default: 'v2026.05'
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  attach:
+    name: Download artifact and attach to release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download ISO from existing run
+        uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pattern: mintarch-iso-*
+          path: /tmp/iso-download
+          merge-multiple: true
+
+      - name: List downloaded files
+        run: ls -lh /tmp/iso-download/
+
+      - name: Generate checksums
+        id: info
+        run: |
+          ISO=$(ls /tmp/iso-download/mintarch-*.iso 2>/dev/null | head -1)
+          if [ -z "$ISO" ]; then
+            echo "ERROR: No ISO found in downloaded artifact" >&2
+            ls -la /tmp/iso-download/ || true
+            exit 1
+          fi
+          NAME=$(basename "$ISO")
+          SIZE=$(du -sh "$ISO" | cut -f1)
+          SHA256=$(sha256sum "$ISO" | cut -d" " -f1)
+          MD5=$(md5sum "$ISO" | cut -d" " -f1)
+          echo "iso_name=$NAME" >> $GITHUB_OUTPUT
+          echo "iso_size=$SIZE" >> $GITHUB_OUTPUT
+          echo "sha256=$SHA256" >> $GITHUB_OUTPUT
+          echo "md5=$MD5" >> $GITHUB_OUTPUT
+          echo "$SHA256  $NAME" > /tmp/iso-download/${{ inputs.tag }}-SHA256SUM
+          echo "$MD5  $NAME"   > /tmp/iso-download/${{ inputs.tag }}-MD5SUM
+          echo "ISO: $NAME ($SIZE)"
+          echo "SHA256: $SHA256"
+
+      - name: Attach ISO to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag }}
+          files: |
+            /tmp/iso-download/mintarch-*.iso
+            /tmp/iso-download/${{ inputs.tag }}-SHA256SUM
+            /tmp/iso-download/${{ inputs.tag }}-MD5SUM
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        run: |
+          echo "## ISO attached to release ${{ inputs.tag }}!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| | |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| **ISO** | ${{ steps.info.outputs.iso_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Size** | ${{ steps.info.outputs.iso_size }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **SHA256** | `${{ steps.info.outputs.sha256 }}` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **MD5** | `${{ steps.info.outputs.md5 }}` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "[View Release](https://github.com/og-py3/mint-arch-linux/releases/tag/${{ inputs.tag }})" >> $GITHUB_STEP_SUMMARY
