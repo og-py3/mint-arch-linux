@@ -1,10 +1,11 @@
 [Desktop Entry]
 Type=Application
 Name=Mint Arch Live Wallpaper
-Exec=/usr/local/bin/mint-live-wallpaper
+Exec=bash -c "sleep 4 && /usr/local/bin/mint-live-wallpaper"
 Icon=/usr/share/pixmaps/mintarch-logo.png
-Comment=Start Minecraft Northern Lights live video wallpaper
-X-KDE-autostart-phase=1
+Comment=Minecraft Northern Lights live wallpaper (hardware-accelerated, 30fps cap)
+X-KDE-autostart-phase=2
+X-KDE-autostart-after=panel
 Hidden=false
 NoDisplay=false
 X-GNOME-Autostart-enabled=true
