@@ -1,0 +1,11 @@
+[Theme]
+name=breeze-dark
+
+[ContrastEffect]
+enabled=true
+contrast=0.2
+intensity=1.4
+saturation=1.1
+
+[BlurEffect]
+enabled=true
