@@ -115,8 +115,16 @@ spice-vdagent
 # Notifications
 libnotify
 
+# Live Video Wallpaper
+mpv
+mpvpaper
+xwinwrap
+
 # KDE blur & effects (Wayland compositor)
 kdecoration
+kwin-effects-blur
+qt6-multimedia
+qt6-multimedia-ffmpeg
 
 # Terminal emulator extras
 tmux
