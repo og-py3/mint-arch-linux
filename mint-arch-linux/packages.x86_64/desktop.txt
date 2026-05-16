@@ -79,7 +79,7 @@ gst-plugins-good
 gst-plugins-bad
 gst-plugins-ugly
 gst-libav
-phonon-qt6-gstreamer
+phonon-qt6-vlc
 
 # Browser
 firefox
@@ -101,11 +101,10 @@ mesa-utils
 vulkan-icd-loader
 xf86-video-vesa
 xf86-video-fbdev
-xf86-video-vmware
-open-vm-tools
-virtualbox-guest-utils
 xf86-video-qxl
 spice-vdagent
+open-vm-tools
+virtualbox-guest-utils
 
 # Notifications
 libnotify
