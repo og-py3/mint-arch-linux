@@ -16,6 +16,7 @@ error() { echo -e "${RED}[✗]${NC} $*"; exit 1; }
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$(dirname "$SCRIPT_DIR")")"
 DESKTOP_DIR="$(dirname "$SCRIPT_DIR")"
+REPO_DIR="$(dirname "$DESKTOP_DIR")"
 DATA_DIR="$HOME/.mint-arch-data"
 
 clear
@@ -56,7 +57,7 @@ else
         info "Building Mint Arch Linux desktop image (first time only, ~5 min)..."
         warn "This downloads Arch Linux + KDE + security tools (~3GB)"
         echo ""
-        docker build -t mint-arch-linux-desktop:latest "$DESKTOP_DIR" \
+        docker build -t mint-arch-linux-desktop:latest -f "$DESKTOP_DIR/Dockerfile" "$REPO_DIR" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --progress=plain || {
             warn "Custom build failed, falling back to stock Arch KDE image..."

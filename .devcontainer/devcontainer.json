@@ -1,0 +1,25 @@
+{
+  "name": "Mint Arch Linux Desktop",
+  "build": {
+    "dockerfile": "mint-arch-desktop/Dockerfile",
+    "context": "."
+  },
+  "workspaceFolder": "/workspaces/mint-arch-linux/mint-arch-desktop",
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {
+      "label": "Mint Arch Linux Desktop",
+      "onAutoForward": "openBrowser"
+    }
+  },
+  "postStartCommand": "bash /workspaces/mint-arch-linux/mint-arch-desktop/scripts/init-desktop.sh",
+  "remoteUser": "root",
+  "containerEnv": {
+    "TITLE": "Mint Arch Linux",
+    "CUSTOM_USER": "mint",
+    "PASSWORD": "mint",
+    "PUID": "1000",
+    "PGID": "1000",
+    "TZ": "UTC"
+  }
+}
