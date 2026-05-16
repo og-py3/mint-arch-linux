@@ -31,7 +31,6 @@ jobs:
           echo "date=$(date +%Y.%m.%d)" >> $GITHUB_OUTPUT
           echo "year=$(date +%Y)" >> $GITHUB_OUTPUT
           echo "month=$(date +%m)" >> $GITHUB_OUTPUT
-          # Determine if pre-release
           if echo "$TAG" | grep -qE '(alpha|beta|rc)'; then
             echo "prerelease=true" >> $GITHUB_OUTPUT
             echo "channel=beta" >> $GITHUB_OUTPUT
@@ -40,14 +39,26 @@ jobs:
             echo "channel=stable" >> $GITHUB_OUTPUT
           fi
 
+      - name: Initialize pacman keyring
+        run: |
+          pacman-key --init
+          pacman-key --populate archlinux
+          pacman -Sy --noconfirm archlinux-keyring
+
       - name: Install build dependencies
         run: |
-          pacman -Sy --noconfirm archlinux-keyring
           pacman -Su --noconfirm
           pacman -S --noconfirm --needed \
             archiso dosfstools e2fsprogs libisoburn \
             squashfs-tools mtools grub efibootmgr \
             syslinux curl wget git
+
+      - name: Set up BlackArch repository
+        run: |
+          curl -fsSL https://blackarch.org/strap.sh -o /tmp/strap.sh
+          chmod +x /tmp/strap.sh
+          bash /tmp/strap.sh || true
+          pacman -Sy --noconfirm 2>/dev/null || true
 
       - name: Set file permissions
         working-directory: mint-arch-linux
@@ -61,12 +72,17 @@ jobs:
         env:
           OUT_DIR: /tmp/output
           CHANNEL: ${{ steps.version.outputs.channel }}
-        run: ./build.sh --output /tmp/output
+          CI: "true"
+        run: ./build.sh --output /tmp/output --ci
 
       - name: Generate checksums
         id: checksum
         run: |
           ISO=$(ls /tmp/output/mintarch-*.iso 2>/dev/null | head -1)
+          if [ -z "$ISO" ]; then
+            echo "ERROR: No ISO found" >&2
+            exit 1
+          fi
           echo "iso_path=$ISO" >> $GITHUB_OUTPUT
           echo "iso_name=$(basename $ISO)" >> $GITHUB_OUTPUT
           echo "iso_size=$(du -sh $ISO | cut -f1)" >> $GITHUB_OUTPUT
@@ -76,21 +92,18 @@ jobs:
           echo "sha256=$SHA256" >> $GITHUB_OUTPUT
           echo "md5=$MD5" >> $GITHUB_OUTPUT
 
-          # Write checksum files
-          echo "$SHA256  $(basename $ISO)" > /tmp/output/mintarch-${{ steps.version.outputs.tag }}-SHA256SUM
-          echo "$MD5  $(basename $ISO)"   > /tmp/output/mintarch-${{ steps.version.outputs.tag }}-MD5SUM
+          echo "$SHA256  $(basename $ISO)" > /tmp/output/${{ steps.version.outputs.tag }}-SHA256SUM
+          echo "$MD5  $(basename $ISO)"   > /tmp/output/${{ steps.version.outputs.tag }}-MD5SUM
 
       - name: Generate changelog
         id: changelog
         run: |
-          # Get commits since last tag
-          PREV_TAG=$(git tag --sort=-version:refname | grep -v "${{ steps.version.outputs.tag }}" | head -1 || echo "")
+          PREV_TAG=$(git tag --sort=-version:refname | grep -v "${{ steps.version.outputs.tag }}" | head -1 || true)
           if [ -n "$PREV_TAG" ]; then
             LOG=$(git log ${PREV_TAG}..${{ steps.version.outputs.tag }} --oneline --no-decorate 2>/dev/null | head -30 | sed 's/^/- /' || echo "- Initial release")
           else
             LOG="- Initial release of Mint Arch Linux"
           fi
-          # Write to file to handle multiline
           echo "$LOG" > /tmp/changelog.txt
           echo "prev_tag=$PREV_TAG" >> $GITHUB_OUTPUT
 
@@ -104,7 +117,7 @@ jobs:
           body: |
             # Mint Arch Linux ${{ steps.version.outputs.tag }}
 
-            > Rolling Arch Linux distribution — KDE Plasma 6 · Security Tools · Browser Desktop
+            > Rolling Arch Linux — KDE Plasma 6 · 150+ Security Tools · Browser Desktop
 
             ---
 
@@ -129,55 +142,53 @@ jobs:
 
             ## Installation
 
-            ### Flash to USB (Linux/Mac)
+            **Flash to USB (Linux/Mac)**
             ```bash
             sudo dd if=${{ steps.checksum.outputs.iso_name }} of=/dev/sdX bs=4M status=progress oflag=sync
             ```
 
-            ### Windows
-            Use **Rufus**, **balenaEtcher**, or **Ventoy**
+            **Windows** — Use Rufus, balenaEtcher, or Ventoy
 
-            ### VirtualBox / VMware
+            **VirtualBox / VMware**
             ```
-            New VM → Arch Linux 64-bit → Enable EFI → 4GB RAM → Attach ISO → Boot
+            New VM → Arch Linux 64-bit → Enable EFI → 4GB RAM min → Attach ISO
             sudo mint-installer
             ```
 
             ---
 
-            ## Included Tools (pre-installed)
+            ## Pre-installed Tools
 
             | Category | Tools |
             |---|---|
-            | Network Scanning | nmap, masscan, netdiscover, arp-scan |
-            | Web Testing | sqlmap, nikto, gobuster, ffuf, burpsuite |
-            | Password Cracking | hashcat, john, hydra, medusa |
-            | Wireless | aircrack-ng, kismet, wireshark, bettercap |
-            | Exploitation | metasploit, exploitdb, pwntools |
-            | Forensics | autopsy, volatility3, binwalk, exiftool |
-            | Reverse Eng | radare2, ghidra, gdb, pwndbg |
-            | OSINT | maltego, sherlock, theharvester, amass |
-            | Defensive | snort, suricata, rkhunter, lynis |
+            | Network Scanning | nmap, masscan, netdiscover, arp-scan, hping3 |
+            | Web Testing | sqlmap, nikto, gobuster, ffuf, wfuzz, zaproxy |
+            | Password Cracking | hashcat, john, hydra, medusa, crunch |
+            | Wireless | aircrack-ng, kismet, wireshark, bettercap, hcxtools |
+            | Exploitation | metasploit, exploitdb, python-pwntools, impacket |
+            | Forensics | autopsy, volatility3, binwalk, exiftool, sleuthkit |
+            | Reverse Engineering | radare2, ghidra, gdb, pwndbg, jadx |
+            | OSINT | maltego, sherlock, theharvester, amass, spiderfoot |
+            | Defensive | snort, suricata, rkhunter, lynis, clamav |
 
-            > **2800+ more tools** available instantly via:
+            > **2800+ more tools** via BlackArch:
             > ```bash
-            > sudo mint-tools-setup   # interactive menu
-            > pacman -S blackarch      # install everything
+            > sudo mint-tools-setup
             > ```
 
             ---
 
-            ## Try in Browser (no install needed)
+            ## Try Without Installing
 
             [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/og-py3/mint-arch-linux)
 
             ---
 
-            *Built with ❤️ on Arch Linux · Powered by BlackArch · KDE Plasma 6*
+            *Built on Arch Linux · Powered by BlackArch · KDE Plasma 6*
           files: |
             /tmp/output/mintarch-*.iso
-            /tmp/output/mintarch-${{ steps.version.outputs.tag }}-SHA256SUM
-            /tmp/output/mintarch-${{ steps.version.outputs.tag }}-MD5SUM
+            /tmp/output/${{ steps.version.outputs.tag }}-SHA256SUM
+            /tmp/output/${{ steps.version.outputs.tag }}-MD5SUM
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
