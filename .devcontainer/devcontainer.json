@@ -1,25 +1,34 @@
 {
-  "name": "Mint Arch Linux Desktop",
+  "name": "Mint Arch Linux VM Desktop",
   "build": {
     "dockerfile": "mint-arch-desktop/Dockerfile",
     "context": "."
   },
-  "workspaceFolder": "/workspaces/mint-arch-linux/mint-arch-desktop",
-  "forwardPorts": [3000],
+  "workspaceFolder": "/workspaces/mint-arch-linux",
+  "forwardPorts": [
+    3000,
+    5900
+  ],
   "portsAttributes": {
     "3000": {
-      "label": "Mint Arch Linux Desktop",
+      "label": "Mint Arch Linux Desktop (noVNC)",
       "onAutoForward": "openBrowser"
+    },
+    "5900": {
+      "label": "VNC (raw)",
+      "onAutoForward": "ignore"
     }
   },
   "postStartCommand": "bash /workspaces/mint-arch-linux/mint-arch-desktop/scripts/init-desktop.sh",
   "remoteUser": "root",
   "containerEnv": {
-    "TITLE": "Mint Arch Linux",
-    "CUSTOM_USER": "mint",
-    "PASSWORD": "mint",
-    "PUID": "1000",
-    "PGID": "1000",
-    "TZ": "UTC"
-  }
+    "ISO_PATH": "/vm/mintarch.iso",
+    "VM_RAM": "2048",
+    "VM_CPUS": "2",
+    "DISK_SIZE": "20G"
+  },
+  "runArgs": [
+    "--privileged",
+    "--device=/dev/kvm"
+  ]
 }
