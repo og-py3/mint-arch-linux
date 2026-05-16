@@ -1,0 +1,342 @@
+================================================================================
+MINT ARCH LINUX — COMPLETE SECURITY TOOLS REFERENCE
+Powered by BlackArch Linux Repository
+2800+ tools available | https://github.com/og-py3/mint-arch-linux
+================================================================================
+
+HOW TO INSTALL ANY TOOL
+────────────────────────
+  sudo pacman -S <toolname>           Install a single tool
+  sudo pacman -S blackarch-<group>    Install an entire category
+  sudo pacman -S blackarch            Install ALL 2800+ tools
+  sudo mint-tools-setup               Interactive menu installer
+  sudo bash tools/install-tools.sh    This repo's install script
+
+BLACKARCH GROUPS (install by category)
+───────────────────────────────────────
+  pacman -S blackarch-exploitation
+  pacman -S blackarch-fuzzer
+  pacman -S blackarch-forensic
+  pacman -S blackarch-recon
+  pacman -S blackarch-scanner
+  pacman -S blackarch-webapp
+  pacman -S blackarch-networking
+  pacman -S blackarch-crypto
+  pacman -S blackarch-reversing
+  pacman -S blackarch-mobile
+  pacman -S blackarch-cracker
+  pacman -S blackarch-sniffer
+  pacman -S blackarch-wireless
+  pacman -S blackarch-social
+  pacman -S blackarch-voip
+  pacman -S blackarch-windows
+  pacman -S blackarch-osint
+  pacman -S blackarch-proxy
+  pacman -S blackarch-stego
+  pacman -S blackarch-spoof
+  pacman -S blackarch-anti-forensic
+  pacman -S blackarch-backdoor
+  pacman -S blackarch-code-audit
+  pacman -S blackarch-config
+  pacman -S blackarch-decompiler
+  pacman -S blackarch-defensive
+  pacman -S blackarch-disassembler
+  pacman -S blackarch-dos
+  pacman -S blackarch-drone
+  pacman -S blackarch-fingerprint
+  pacman -S blackarch-firmware
+  pacman -S blackarch-hardware
+  pacman -S blackarch-honeypot
+  pacman -S blackarch-ids
+  pacman -S blackarch-keylogger
+  pacman -S blackarch-malware
+  pacman -S blackarch-misc
+  pacman -S blackarch-mobile
+  pacman -S blackarch-nfc
+  pacman -S blackarch-packer
+  pacman -S blackarch-radio
+  pacman -S blackarch-unpacker
+  pacman -S blackarch-vehicle
+  pacman -S blackarch-threat-modeling
+
+================================================================================
+PRE-INSTALLED TOOLS (bundled in the ISO)
+================================================================================
+
+── INFORMATION GATHERING ───────────────────────────────────────────────────────
+  nmap            Network mapper — port scanning, OS detection, scripts
+  masscan         Fastest port scanner (100M packets/sec)
+  netdiscover     ARP-based network scanner for LAN discovery
+  arp-scan        Send ARP packets to discover hosts
+  whois           Domain/IP WHOIS lookup
+  bind / dig      DNS query tool
+  traceroute      Trace packet route to a host
+  mtr             Realtime traceroute + ping combo
+  tcptraceroute   Traceroute using TCP instead of ICMP
+  fping           Send ICMP pings to multiple hosts
+  hping           TCP/UDP/ICMP packet assembler/analyzer
+  nbtscan         Scan networks for NetBIOS name info
+  onesixtyone     Fast SNMP scanner
+
+── RECONNAISSANCE ──────────────────────────────────────────────────────────────
+  amass           In-depth DNS enumeration and attack surface mapping
+  subfinder       Fast passive subdomain discovery
+  httpx           Fast HTTP probing tool
+  whatweb         Web app fingerprinter (CMS, frameworks, etc.)
+  wafw00f         Detect and fingerprint Web Application Firewalls
+  dnsrecon        DNS enumeration — zone transfer, brute, reverse
+  fierce          DNS recon and host discovery
+  dnsenum         DNS enumeration — MX, NS, zone transfer, brute
+  theharvester    OSINT — emails, hostnames, IPs from public sources
+  nuclei          Template-based vulnerability scanner
+
+── WEB APPLICATION TESTING ─────────────────────────────────────────────────────
+  sqlmap          Automated SQL injection and takeover tool
+  nikto           Web server scanner (2500+ checks)
+  dirb            Web content scanner using wordlists
+  gobuster        Dir/DNS/vhost brute-force in Go
+  ffuf            Fast web fuzzer — dirs, params, subdomains
+  wfuzz           Web application fuzzer
+  burpsuite       Web proxy / security testing platform
+  zaproxy         OWASP ZAP — web app scanner and proxy
+  wapiti          Web vulnerability scanner (blackbox)
+  commix          Automated command injection and exploitation
+  skipfish        Active web app recon tool
+
+── PASSWORD & HASH CRACKING ────────────────────────────────────────────────────
+  hashcat         GPU-accelerated password recovery (world's fastest)
+  john            John the Ripper — CPU-based password cracker
+  hydra           Parallelized login cracker (SSH, FTP, HTTP, etc.)
+  medusa          Fast parallel password cracker
+  crunch          Wordlist generator
+  cewl            Custom wordlist generator from websites
+  hash-identifier Identify hash types
+  pdfcrack        PDF password cracker
+  fcrackzip       ZIP password cracker
+  rarcrack        RAR/7z/ZIP cracker
+
+── WIRELESS & WIFI ─────────────────────────────────────────────────────────────
+  aircrack-ng     Full WiFi auditing suite (WEP/WPA/WPA2)
+  kismet          Wireless network detector, sniffer, IDS
+  wireshark-qt    GUI network protocol analyzer
+  wireshark-cli   CLI version of Wireshark (tshark)
+  bettercap       MITM framework — WiFi, BLE, HID attacks
+  mdk4            WiFi stress testing tool
+  pixiewps        WPS offline PIN attack
+  reaver          WPS brute-force attack tool
+  hcxdumptool     Capture PMKID and handshakes from WiFi
+  hcxtools        Convert/analyze captured WiFi packets
+  iw              CLI WiFi tool
+  wavemon         Wireless network monitoring tool
+
+── EXPLOITATION ────────────────────────────────────────────────────────────────
+  metasploit      World's most used penetration testing framework
+  exploitdb       Offline copy of Exploit-DB (searchsploit)
+  pwntools        CTF framework and exploit dev library
+  python-impacket Python network protocol library (SMB, NTLM, etc.)
+
+── POST-EXPLOITATION ───────────────────────────────────────────────────────────
+  crackmapexec    Swiss army knife for post-exploitation (SMB, WinRM)
+  evil-winrm      WinRM shell for post-exploitation
+  bloodhound      AD attack path mapping (needs neo4j)
+  neo4j           Graph database — used by BloodHound
+  smbclient       SMB/CIFS client
+  smbmap          SMB share enumeration
+  pwncat          Netcat on steroids — bind/reverse shells
+  socat           Multipurpose relay tool
+
+── FORENSICS & RECOVERY ────────────────────────────────────────────────────────
+  autopsy         Digital forensics platform (GUI)
+  sleuthkit       CLI digital forensics tools (fls, icat, etc.)
+  binwalk         Firmware extraction and analysis
+  foremost        File carving by header/footer
+  testdisk        Partition recovery
+  photorec        File recovery from disks
+  dc3dd           Enhanced dd for forensics imaging
+  ddrescue        Data recovery from damaged media
+  exiftool        Read/write metadata in files
+  bulk-extractor  Extract data (emails, URLs, etc.) from disk images
+  volatility3     Memory forensics framework
+
+── REVERSE ENGINEERING ─────────────────────────────────────────────────────────
+  radare2         Open-source reverse engineering framework
+  ghidra          NSA's free software reverse engineering suite
+  cutter          GUI frontend for radare2
+  gdb             GNU debugger
+  pwndbg          GDB plugin with extra features for exploit dev
+  ltrace          Library call tracer
+  strace          System call tracer
+  valgrind        Memory debugging and profiling
+  apktool         Decompile/recompile Android APKs
+  dex2jar         Convert .dex to .jar
+  jadx            Java/Android decompiler to readable source
+
+── SNIFFING & SPOOFING ─────────────────────────────────────────────────────────
+  tcpdump         CLI packet analyzer
+  dsniff          Network sniffer suite (dsniff, mailsnarf, etc.)
+  ettercap        MITM attacks on LAN
+  responder       LLMNR/NBT-NS/MDNS poisoner
+  arpwatch        Monitor ARP activity on network
+  mitmproxy       Interactive HTTPS/HTTP proxy
+  sslstrip        Strip HTTPS → HTTP for MITM
+  netsed          Network packet stream editor
+
+── NETWORK TOOLS ───────────────────────────────────────────────────────────────
+  ncat            Netcat rewrite with SSL/proxy support
+  netcat          Classic TCP/UDP Swiss army knife
+  socat           Bidirectional data relay
+  proxychains-ng  Route traffic through SOCKS/HTTP proxies
+  tor             Anonymity network
+  torsocks        Use SOCKS proxy with any app via tor
+  openvpn         Full-featured SSL/TLS VPN
+  wireguard-tools Modern VPN tunnel
+  sslscan         SSL/TLS cipher and certificate scanner
+  openssl         Crypto library + CLI toolkit
+
+── CRYPTOGRAPHY & STEGANOGRAPHY ────────────────────────────────────────────────
+  steghide        Hide/extract data in images and audio
+  stegseek        Fast steghide brute-force (1 billion words/sec)
+  age             Simple, modern file encryption
+  gnupg           GNU Privacy Guard — GPG keys, signing, encryption
+  xortool         Analyze multi-byte XOR ciphers (CTF tool)
+
+── OSINT ────────────────────────────────────────────────────────────────────────
+  maltego         Visual link analysis / OSINT platform
+  recon-ng        Web reconnaissance framework with modules
+  theharvester    Email, subdomain, host OSINT
+  sherlock        Hunt usernames across 300+ social networks
+  spiderfoot      Automated OSINT tool
+
+── SOCIAL ENGINEERING ──────────────────────────────────────────────────────────
+  set             Social-Engineer Toolkit (spear phishing, payloads)
+
+── FUZZING ─────────────────────────────────────────────────────────────────────
+  radamsa         Black-box fuzzer for file formats and streams
+  american-fuzzy-lop (afl++) Coverage-guided fuzzer
+
+── CONTAINER SECURITY ──────────────────────────────────────────────────────────
+  trivy           Container/IaC/code vulnerability scanner
+  dive            Explore Docker image layers
+  grype           Vulnerability scanner for container images
+  syft            SBOM generator for container images
+  hadolint        Dockerfile linter
+
+── MOBILE SECURITY ─────────────────────────────────────────────────────────────
+  apktool         Android APK reverse engineering
+  dex2jar         DEX → JAR converter
+  jadx            Android/Java decompiler
+  frida           Dynamic instrumentation toolkit (iOS + Android)
+  adb             Android Debug Bridge
+  fastboot        Android bootloader/flashing tool
+  androguard      Reverse engineering for Android apps
+
+── DEFENSIVE & MONITORING ──────────────────────────────────────────────────────
+  snort           Network intrusion detection (NIDS)
+  suricata        High-performance IDS/IPS
+  rkhunter        Rootkit hunter
+  chkrootkit      Another rootkit scanner
+  lynis           Security auditing for Unix/Linux systems
+  clamav          Open-source antivirus
+  auditd          Linux audit daemon — track syscalls/file access
+  aide            File integrity monitor
+
+── MALWARE ANALYSIS ────────────────────────────────────────────────────────────
+  yara            Pattern matching for malware identification
+
+── FIRMWARE ANALYSIS ───────────────────────────────────────────────────────────
+  binwalk         Firmware extraction and entropy analysis
+  flashrom        Read/write flash chips (BIOS, etc.)
+  esptool         ESP8266/ESP32 firmware tool
+
+================================================================================
+ADDITIONAL BLACKARCH TOOLS (install via group)
+================================================================================
+
+All tools below are available via: sudo pacman -S blackarch-<group>
+Or the full list:                   sudo pacman -S blackarch
+
+── ANTI-FORENSICS ──────────────────────────────────────────────────────────────
+  Secure file deletion, metadata wiping, log cleaning, timestomping tools
+  Command: sudo pacman -S blackarch-anti-forensic
+
+── BACKDOORS ───────────────────────────────────────────────────────────────────
+  RATs, reverse shells, persistent access tools, trojans
+  Command: sudo pacman -S blackarch-backdoor
+
+── CODE AUDIT ──────────────────────────────────────────────────────────────────
+  Static analysis, SAST tools, code review helpers
+  Command: sudo pacman -S blackarch-code-audit
+
+── DECOMPILERS ─────────────────────────────────────────────────────────────────
+  Binary/bytecode decompilers across multiple languages and architectures
+  Command: sudo pacman -S blackarch-decompiler
+
+── DISASSEMBLERS ───────────────────────────────────────────────────────────────
+  Low-level disassembly tools for x86, ARM, MIPS, etc.
+  Command: sudo pacman -S blackarch-disassembler
+
+── DoS / STRESS TESTING ────────────────────────────────────────────────────────
+  Network and application stress/DoS testing tools
+  Command: sudo pacman -S blackarch-dos
+
+── DRONE / RF HACKING ──────────────────────────────────────────────────────────
+  UAV/drone hacking, RF replay, SDR-based attack tools
+  Command: sudo pacman -S blackarch-drone
+
+── FINGERPRINTING ──────────────────────────────────────────────────────────────
+  OS fingerprinting, service detection, banner grabbing
+  Command: sudo pacman -S blackarch-fingerprint
+
+── HARDWARE HACKING ────────────────────────────────────────────────────────────
+  JTAG, UART, SPI, I2C, hardware debuggers
+  Command: sudo pacman -S blackarch-hardware
+
+── HONEYPOTS ───────────────────────────────────────────────────────────────────
+  Fake services to detect and study attackers
+  Command: sudo pacman -S blackarch-honeypot
+
+── IDS / IPS ───────────────────────────────────────────────────────────────────
+  Intrusion detection and prevention systems
+  Command: sudo pacman -S blackarch-ids
+
+── KEYLOGGERS ──────────────────────────────────────────────────────────────────
+  Keyboard capture tools for research/testing
+  Command: sudo pacman -S blackarch-keylogger
+
+── NFC & RFID ──────────────────────────────────────────────────────────────────
+  Contactless card analysis, NFC/RFID cloning, Proxmark tools
+  Command: sudo pacman -S blackarch-nfc
+
+── PACKERS & OBFUSCATORS ───────────────────────────────────────────────────────
+  Binary packing, obfuscation, AV evasion tools
+  Command: sudo pacman -S blackarch-packer
+
+── RADIO / SDR ─────────────────────────────────────────────────────────────────
+  Software-defined radio, signal analysis, GNU Radio, RTL-SDR
+  Command: sudo pacman -S blackarch-radio
+
+── VEHICLE / CAN BUS ───────────────────────────────────────────────────────────
+  Automotive security, CAN bus analysis (can-utils, CaringCaribou)
+  Command: sudo pacman -S blackarch-vehicle
+
+── UNPACKERS ───────────────────────────────────────────────────────────────────
+  Unpack protected/compressed binaries
+  Command: sudo pacman -S blackarch-unpacker
+
+── THREAT MODELING ─────────────────────────────────────────────────────────────
+  Tools for threat modelling and security planning
+  Command: sudo pacman -S blackarch-threat-modeling
+
+================================================================================
+SEARCH FOR ANY TOOL
+================================================================================
+
+  pacman -Ss <name>           Search all repos for a tool
+  pacman -Ss blackarch        List all BlackArch packages
+  pacman -Sg blackarch-webapp List all tools in a group
+  mint-tools-setup            Interactive menu
+
+================================================================================
+Full BlackArch package list: https://blackarch.org/tools.html
+Mint Arch Linux repo:        https://github.com/og-py3/mint-arch-linux
+================================================================================
