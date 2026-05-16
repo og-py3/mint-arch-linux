@@ -1,5 +1,5 @@
 # =============================================================================
-# Mint OS — Base System (Wayland-first, fast boot)
+# Mint Arch Linux — Base System (Wayland-first, fast boot)
 # =============================================================================
 
 # Core
@@ -63,7 +63,7 @@ nano
 networkmanager
 network-manager-applet
 wpa_supplicant
-wireless_tools
+wireless-tools
 iw
 iwd
 dhcpcd
