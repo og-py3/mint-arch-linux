@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
 # Mint Arch Linux - First Boot Configuration Script
-# Runs once on first boot. No external repo dependencies.
+# Runs once on first boot.
 # =============================================================================
 
 set -euo pipefail
@@ -38,7 +38,14 @@ systemctl enable docker 2>/dev/null || true
 systemctl enable paccache.timer
 systemctl enable mint-setup-flatpak.service
 systemctl enable mint-blackarch.service
+
+# --- Enable auto-update system ---
+echo "[+] Enabling Mint auto-update system..."
+# Downloads package updates in background (after boot)
 systemctl enable mint-autoupdate.timer
+# Applies pre-downloaded packages early in next boot (before login screen)
+systemctl enable mint-apply-updates.service
+echo "    Auto-update enabled: packages will silently update on each boot cycle."
 
 # --- Configure zsh as default shell ---
 echo "[+] Setting zsh as default shell..."
@@ -52,17 +59,25 @@ reflector --latest 20 --sort rate --save /etc/pacman.d/mirrorlist || true
 echo "[+] Refreshing package database..."
 pacman -Sy --noconfirm || true
 
-# --- Setup AUR helper (paru) as user ---
+# --- Setup AUR helper check ---
 echo "[+] Checking for AUR helper..."
 if ! command -v paru &>/dev/null; then
-    echo "    paru not found. Users can install it with: mint-setup-aur"
+    echo "    paru not found. Install with: mint-setup-aur"
 fi
 
-# --- Copy Mint Arch Linux logo to expected locations ---
-echo "[+] Setting up Mint Arch Linux branding..."
+# --- Copy Mint Arch Linux logo ---
+echo "[+] Setting up branding..."
 if [ -f /usr/share/mint-arch/logo.png ]; then
     cp /usr/share/mint-arch/logo.png /usr/share/pixmaps/mintarch-logo.png 2>/dev/null || true
 fi
+
+# --- Record installed version ---
+mkdir -p /var/lib/mint-arch
+INSTALLED_VERSION=$(curl -sf --max-time 10 \
+    "https://api.github.com/repos/og-py3/mint-arch-linux/releases/latest" \
+    | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get("tag_name","unknown"))" 2>/dev/null || echo "unknown")
+echo "$INSTALLED_VERSION" > /var/lib/mint-arch/distro-version
+echo "[+] Installed version recorded: $INSTALLED_VERSION"
 
 # --- Mark first boot done ---
 touch /etc/mint-configured
