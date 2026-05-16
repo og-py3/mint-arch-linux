@@ -17,7 +17,6 @@ smbmap
 nbtscan
 onesixtyone
 fping
-hping3
 
 # ── Reconnaissance ───────────────────────────────────────────────────────────
 whatweb
@@ -100,7 +99,6 @@ pwndbg
 ltrace
 strace
 valgrind
-apktool
 dex2jar
 jadx
 
@@ -149,7 +147,6 @@ grype
 syft
 
 # ── Mobile Security ──────────────────────────────────────────────────────────
-apktool
 dex2jar
 jadx
 android-tools
