@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# =============================================================================
+# Mint Arch Linux — Apply Pre-Downloaded Updates
+# Runs BEFORE the display manager on every boot.
+# Installs packages already cached by mint-autoupdate from the previous session.
+# Users never need a new ISO — their system updates itself silently.
+# =============================================================================
+
+STATE_DIR="/var/lib/mint-arch"
+UPDATES_FLAG="$STATE_DIR/updates-ready"
+LOG="/var/log/mint-apply-updates.log"
+
+exec > >(tee -a "$LOG") 2>&1
+
+log()  { echo "[$(date "+%Y-%m-%d %H:%M:%S")] $*"; }
+info() { log "[INFO] $*"; }
+ok()   { log "[OK]   $*"; }
+warn() { log "[WARN] $*"; }
+err()  { log "[ERR]  $*"; }
+
+if [ ! -f "$UPDATES_FLAG" ]; then
+    info "No pending updates — boot continues normally."
+    exit 0
+fi
+
+PENDING=$(head -1 "$UPDATES_FLAG")
+DOWNLOADED_AT=$(sed -n "2p" "$UPDATES_FLAG" 2>/dev/null || echo "unknown")
+
+info "=================================================="
+info "Applying $PENDING pre-downloaded package update(s)"
+info "Downloaded at: $DOWNLOADED_AT"
+info "=================================================="
+
+# Optional Btrfs/Snapper snapshot before applying
+if command -v snapper &>/dev/null && snapper -c root list &>/dev/null 2>&1; then
+    info "Creating pre-update snapshot..."
+    snapper -c root create \
+        --description "mint-apply-updates $(date +%Y-%m-%d)" \
+        --cleanup-algorithm number 2>/dev/null \
+        && ok "Snapshot created." \
+        || warn "Snapshot failed — continuing anyway."
+fi
+
+# Apply from pacman cache — no network needed
+info "Running: pacman -Su --noconfirm"
+if pacman -Su --noconfirm --noprogressbar 2>&1; then
+    ok "$PENDING package(s) applied successfully."
+    rm -f "$UPDATES_FLAG"
+
+    # Detect if kernel was updated — flag for notification
+    RUNNING=$(uname -r)
+    INSTALLED=$(pacman -Q linux 2>/dev/null | awk "{print $2}" || true)
+    if [ -n "$INSTALLED" ] && [ "$RUNNING" != "$INSTALLED" ]; then
+        warn "Kernel updated. A reboot is recommended after logging in."
+        touch "$STATE_DIR/kernel-updated"
+    fi
+
+    # Keep cache tidy
+    paccache -rk2 --noconfirm 2>/dev/null || true
+    ok "Cache cleaned."
+else
+    err "pacman -Su failed. Will retry next boot."
+    # Leave flag in place so we retry
+fi
+
+info "=================================================="
+info "mint-apply-updates done. Continuing boot."
+info "=================================================="
