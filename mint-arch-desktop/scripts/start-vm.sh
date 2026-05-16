@@ -5,9 +5,9 @@
 # Handles split-part ISO downloads automatically (GitHub 2 GB asset limit)
 # =============================================================================
 set -euo pipefail
-
-ISO_PATH="${ISO_PATH:-/vm/mintarch.iso}"
-DISK_PATH="/vm/mintarch-disk.qcow2"
+VM_DIR="${VM_DIR:-$(pwd)/.vm}"
+ISO_PATH="${ISO_PATH:-${VM_DIR}/mintarch.iso}"
+DISK_PATH="${DISK_PATH:-${VM_DIR}/mintarch-disk.qcow2}"
 VM_RAM="${VM_RAM:-2048}"
 VM_CPUS="${VM_CPUS:-2}"
 VNC_PORT="${VNC_PORT:-5900}"
@@ -40,24 +40,25 @@ if [ ! -f "$ISO_PATH" ]; then
     if [ -n "$PART_URLS" ]; then
         TOTAL=$(echo "$PART_URLS" | wc -l)
         info "Found split ISO — downloading $TOTAL parts (~1.9 GB each)..."
-        mkdir -p /vm/parts
+        mkdir -p "${VM_DIR}/parts"
         PART_NUM=1
         while IFS= read -r URL; do
             FNAME=$(basename "$URL")
             info "  Part $PART_NUM/$TOTAL: $FNAME"
-            curl -L --progress-bar -o "/vm/parts/$FNAME" "$URL" \
+            curl -L --progress-bar -o "${VM_DIR}/parts/$FNAME" "$URL" \
                 || error "Download failed: $FNAME"
             PART_NUM=$((PART_NUM + 1))
         done <<< "$PART_URLS"
         info "Reassembling ISO from $TOTAL parts..."
-        cat /vm/parts/mintarch-*.iso.part* > "$ISO_PATH"
-        rm -rf /vm/parts
+        cat "${VM_DIR}/parts/mintarch-*.iso.part*" > "$ISO_PATH"
+        rm -rf "${VM_DIR}/parts"
         ok "ISO ready: $(du -sh "$ISO_PATH" | cut -f1)"
     else
         RELEASE_ISO=$(echo "$RELEASE_DATA" | grep '"browser_download_url"' | grep '.iso"' \
             | head -1 | sed 's/.*"browser_download_url": "\(.*\)".*/\1/' || true)
         if [ -n "$RELEASE_ISO" ]; then
             info "Downloading ISO: $RELEASE_ISO"
+            mkdir -p "${VM_DIR}"
             curl -L --progress-bar -o "$ISO_PATH" "$RELEASE_ISO" || error "Download failed."
             ok "ISO ready: $(du -sh "$ISO_PATH" | cut -f1)"
         else
@@ -86,8 +87,8 @@ OVMF_VARS_SRC=""
 for f in /usr/share/OVMF/OVMF_VARS_4M.fd /usr/share/OVMF/OVMF_VARS.fd; do
     [ -f "$f" ] && OVMF_VARS_SRC="$f" && break
 done
-OVMF_VARS="/vm/OVMF_VARS.fd"
-[ -n "$OVMF_VARS_SRC" ] && [ ! -f "$OVMF_VARS" ] && cp "$OVMF_VARS_SRC" "$OVMF_VARS"
+OVMF_VARS="${VM_DIR}/OVMF_VARS.fd"
+[ -n "$OVMF_VARS_SRC" ] && [ ! -f "$OVMF_VARS" ] && mkdir -p "${VM_DIR}" && cp "$OVMF_VARS_SRC" "$OVMF_VARS"
 
 # ── Step 4: Detect KVM ──────────────────────────────────────────────────────
 ACCEL_OPTS="-machine type=q35,accel=tcg -cpu qemu64"
