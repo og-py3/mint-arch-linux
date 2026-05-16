@@ -3,9 +3,13 @@ name=breeze-dark
 
 [ContrastEffect]
 enabled=true
-contrast=0.2
-intensity=1.4
-saturation=1.1
+contrast=0.30
+intensity=1.7
+saturation=1.0
 
 [BlurEffect]
 enabled=true
+
+[WallpaperColors]
+AccentColor=#2ecb71
+AccentColorFromWallpaper=false
