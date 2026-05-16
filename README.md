@@ -11,7 +11,7 @@
 
 **A rolling Arch Linux distribution — built for security professionals, developers, and power users.**
 
-[![Build ISO](https://github.com/og-py3/mint-arch-linux/actions/workflows/build-iso.yml/badge.svg)](https://github.com/og-py3/mint-arch-linux/actions/workflows/build-iso.yml)
+[![ISO Build](https://img.shields.io/badge/ISO%20Build-Coming%20Soon-orange?logo=linux&logoColor=white)](https://github.com/og-py3/mint-arch-linux/actions/workflows/build-iso.yml)
 [![Release](https://img.shields.io/github/v/release/og-py3/mint-arch-linux?color=2ecb71&label=latest)](https://github.com/og-py3/mint-arch-linux/releases)
 [![License](https://img.shields.io/badge/license-MIT-2ecb71)](LICENSE)
 [![BlackArch](https://img.shields.io/badge/BlackArch-2800%2B%20tools-red)](https://blackarch.org)
