@@ -1,0 +1,406 @@
+================================================================================
+MINT ARCH LINUX — COMPLETE USAGE GUIDE
+================================================================================
+Version: 2025.05
+Repo:    https://github.com/og-py3/mint-arch-linux
+================================================================================
+
+TABLE OF CONTENTS
+─────────────────
+  1. What is Mint Arch Linux?
+  2. Ways to Run It
+  3. Building the ISO
+  4. Installing to Disk
+  5. First Boot Setup
+  6. The Desktop
+  7. Security Tools (2800+)
+  8. Custom mint-* Commands
+  9. Package Management
+  10. Web / Browser Desktop
+  11. Updating the System
+  12. Snapshots & Recovery
+  13. Troubleshooting
+  14. Contributing
+
+================================================================================
+1. WHAT IS MINT ARCH LINUX?
+================================================================================
+
+Mint Arch Linux is a rolling-release Linux distribution based on Arch Linux.
+It ships with:
+  - KDE Plasma 6 desktop (Wayland-first)
+  - 150+ pre-installed security and pentesting tools
+  - Access to 2800+ BlackArch tools (available on demand)
+  - Custom mint-* CLI tools for system management
+  - Btrfs filesystem with automatic Snapper snapshots
+  - Browser-accessible KDE desktop (via Docker/Codespaces)
+  - Calamares graphical installer
+
+================================================================================
+2. WAYS TO RUN IT
+================================================================================
+
+A) BROWSER DESKTOP (no install, no ISO needed)
+─────────────────────────────────────────────
+  GitHub Codespaces (free, runs in your browser):
+    1. Go to: https://github.com/og-py3/mint-arch-linux
+    2. Click Code → Codespaces → Create codespace on main
+    3. Wait ~3–5 min for build
+    4. KDE desktop opens on port 3000
+    5. Login: mint / mint
+
+  Local Docker:
+    git clone https://github.com/og-py3/mint-arch-linux
+    cd mint-arch-linux/mint-arch-desktop
+    bash scripts/start-desktop.sh
+    # Open http://localhost:3000
+
+B) LIVE USB (run without installing)
+─────────────────────────────────────
+  1. Build or download the ISO (see section 3)
+  2. Flash to USB:
+       Linux/Mac:
+         sudo dd if=mintarch-*.iso of=/dev/sdX bs=4M status=progress oflag=sync
+       Windows: Use Rufus or balenaEtcher
+  3. Boot from USB → try the live environment
+
+C) INSTALL TO DISK
+──────────────────
+  Boot from USB → open installer:
+    sudo mint-installer     (launches Calamares)
+
+D) VIRTUAL MACHINE
+──────────────────
+  VirtualBox:
+    - New → Arch Linux 64-bit
+    - RAM: 4GB+, Disk: 30GB+
+    - Enable EFI (System settings)
+    - Attach ISO → Boot
+    - sudo mint-installer
+
+  VMware:
+    - New VM → Arch Linux
+    - Attach ISO → Boot
+
+================================================================================
+3. BUILDING THE ISO
+================================================================================
+
+A) GitHub Actions (recommended — zero setup)
+────────────────────────────────────────────
+  Option 1 — Manual trigger:
+    1. Go to: https://github.com/og-py3/mint-arch-linux/actions
+    2. Click "Build Mint Arch Linux ISO"
+    3. Click "Run workflow"
+    4. Download from Artifacts when done (~30–45 min)
+
+  Option 2 — Auto on push:
+    Every git push to main triggers a fresh build automatically.
+
+  Option 3 — Create a release:
+    git tag v2025.05
+    git push origin v2025.05
+    GitHub builds the ISO and creates a release with download link.
+
+B) GitHub Codespaces (build from terminal)
+──────────────────────────────────────────
+    # Open Codespace on your repo, then in terminal:
+    docker pull archlinux:latest
+    docker run -it --privileged -v $(pwd):/build -w /build/mint-arch-linux archlinux:latest bash
+
+    # Inside the container:
+    pacman -Sy --noconfirm archiso
+    ./build.sh
+
+C) Local Arch Linux machine
+────────────────────────────
+    sudo pacman -S archiso
+    cd mint-arch-linux
+    sudo ./build.sh
+
+    # With options:
+    sudo ./build.sh --clean            # clean previous build first
+    sudo ./build.sh --output /tmp/out  # custom output directory
+
+================================================================================
+4. INSTALLING TO DISK
+================================================================================
+
+  Boot from live USB → open terminal → run:
+    sudo mint-installer
+
+  This launches the Calamares graphical installer. Follow the steps:
+    1. Welcome — select language
+    2. Location — select timezone
+    3. Keyboard — select layout
+    4. Partitions — auto or manual
+    5. Users — create your account
+    6. Summary — review and install
+    7. Done — reboot
+
+  Partition recommendation (manual):
+    /boot/efi    512MB   FAT32
+    /            40GB+   Btrfs (recommended)
+    /home        rest    Btrfs
+    swap         2GB     swap (or use zram — already configured)
+
+================================================================================
+5. FIRST BOOT SETUP
+================================================================================
+
+  On first boot, these happen automatically:
+    - Locales are generated
+    - Services are enabled (NetworkManager, SDDM, etc.)
+    - BlackArch repository is added
+    - Flatpak + Flathub configured
+    - Mirrors updated via reflector
+    - zsh set as default shell
+    - Snapper snapshots configured
+
+  After logging in to KDE, open terminal and run:
+    sudo mint-update              # update everything first
+    sudo mint-tools-setup         # install security tools
+    sudo mint-setup-aur           # install paru (AUR helper)
+
+================================================================================
+6. THE DESKTOP
+================================================================================
+
+  Desktop Environment: KDE Plasma 6 (Wayland)
+  Display Manager:     SDDM
+  Terminal:            Konsole (with JetBrains Mono Nerd Font)
+  Shell:               zsh + starship prompt
+  Theme:               Mint Arch Dark (Kvantum)
+  File Manager:        Dolphin
+
+  KDE Keyboard shortcuts:
+    Super              Application launcher
+    Super + E          File manager
+    Super + T          Terminal
+    Super + L          Lock screen
+    Alt + F4           Close window
+    Ctrl + Alt + T     Terminal (configured)
+
+================================================================================
+7. SECURITY TOOLS (2800+)
+================================================================================
+
+  PRE-INSTALLED (work offline):
+    See tools/tools-list.txt for the complete list of ~150 bundled tools
+
+  INSTALL MORE TOOLS:
+    Interactive menu:
+      sudo mint-tools-setup
+
+    By category:
+      sudo pacman -S blackarch-webapp        # web app testing
+      sudo pacman -S blackarch-recon         # reconnaissance
+      sudo pacman -S blackarch-exploitation  # exploitation
+      sudo pacman -S blackarch-forensic      # forensics
+      sudo pacman -S blackarch-wireless      # WiFi/wireless
+      sudo pacman -S blackarch-cracker       # password cracking
+      sudo pacman -S blackarch-reversing     # reverse engineering
+      sudo pacman -S blackarch-osint         # OSINT
+      sudo pacman -S blackarch-mobile        # mobile security
+      sudo pacman -S blackarch-malware       # malware analysis
+
+    Install everything (2800+ tools, ~20GB):
+      sudo pacman -S blackarch
+
+    Script from this repo:
+      sudo bash tools/install-tools.sh top100     # top 100
+      sudo bash tools/install-tools.sh webapp     # category
+      sudo bash tools/install-tools.sh all        # everything
+
+    Search for a specific tool:
+      pacman -Ss <toolname>
+
+    List all tools in a group:
+      pacman -Sg blackarch-webapp
+
+    Full tool index: https://blackarch.org/tools.html
+
+================================================================================
+8. CUSTOM mint-* COMMANDS
+================================================================================
+
+  mint-update          Full system update (pacman + AUR + Flatpak + firmware)
+  mint-clean           Clean package cache, orphans, tmp files
+  mint-tools-setup     Interactive security tool installer (2800+ tools)
+  mint-blackarch-setup Bootstrap the BlackArch repository
+  mint-setup-aur       Install paru (AUR helper)
+  mint-doctor          System health check + fix common issues
+  mint-fetch           System info display (like neofetch)
+  mint-backup          Btrfs snapshot management
+  mint-snapshot        Create/restore/list Snapper snapshots
+  mint-optimizer       Performance tuning (swappiness, I/O, CPU)
+  mint-privacy         Enable/disable privacy settings + firewall
+  mint-health          Disk health (SMART), memory test, temp check
+  mint-hardware        Hardware info — CPU, GPU, RAM, drives
+  mint-driver-manager  Detect and install missing drivers
+  mint-gaming          Install gaming stack (Steam, Lutris, DXVK, etc.)
+  mint-installer       Launch Calamares graphical installer
+  mint-welcome         Show welcome screen
+  mint-firstboot       Re-run first boot configuration
+  mint-zram-init       Configure zram swap
+
+  All commands accept --help for usage details.
+
+================================================================================
+9. PACKAGE MANAGEMENT
+================================================================================
+
+  Official repos (pacman):
+    sudo pacman -S <package>      Install
+    sudo pacman -R <package>      Remove
+    sudo pacman -Rs <package>     Remove + orphan deps
+    sudo pacman -Sy               Sync databases
+    sudo pacman -Su               Upgrade packages
+    sudo pacman -Syu              Full upgrade
+    sudo pacman -Ss <keyword>     Search
+    sudo pacman -Qi <package>     Package info
+    sudo pacman -Ql <package>     List package files
+
+  AUR (user repositories — after mint-setup-aur):
+    paru -S <package>             Install AUR package
+    paru -Sua                     Update AUR packages
+    paru <keyword>                Search AUR + official
+
+  Flatpak:
+    flatpak install flathub <app>
+    flatpak run <app>
+    flatpak update
+
+  BlackArch (already configured):
+    sudo pacman -S blackarch-<group>    Install a tool group
+    sudo pacman -S blackarch            Install everything
+    sudo pacman -Sg blackarch-webapp    List tools in group
+
+================================================================================
+10. WEB / BROWSER DESKTOP
+================================================================================
+
+  The browser desktop gives you a full KDE Plasma environment accessible
+  from any web browser — no local install needed.
+
+  Via Codespaces (recommended):
+    1. https://github.com/og-py3/mint-arch-linux
+    2. Code → Codespaces → Create codespace on main
+    3. Auto-opens port 3000 in browser
+    4. Login: mint / mint
+
+  Via local Docker:
+    git clone https://github.com/og-py3/mint-arch-linux
+    cd mint-arch-linux/mint-arch-desktop
+    bash scripts/start-desktop.sh
+    # Open http://localhost:3000
+
+  Manage the desktop:
+    bash scripts/start-desktop.sh    # start
+    bash scripts/stop-desktop.sh     # stop
+    bash scripts/reset-desktop.sh    # factory reset (erases data)
+    bash scripts/install-app.sh nmap # install a package into the container
+
+================================================================================
+11. UPDATING THE SYSTEM
+================================================================================
+
+  Full system update (recommended):
+    sudo mint-update
+
+  What mint-update does:
+    1. Updates pacman mirrors (reflector)
+    2. Upgrades all system packages (pacman -Syu)
+    3. Updates AUR packages (paru -Sua)
+    4. Updates Flatpak apps
+    5. Updates firmware (fwupdmgr)
+    6. Cleans old package cache
+
+  Manual update:
+    sudo pacman -Syu               system packages
+    paru -Sua                      AUR packages
+    flatpak update                 Flatpak apps
+    sudo fwupdmgr update           firmware
+
+================================================================================
+12. SNAPSHOTS & RECOVERY
+================================================================================
+
+  Mint Arch Linux uses Btrfs + Snapper for automatic snapshots.
+
+  Create a snapshot:
+    sudo mint-snapshot create "before update"
+
+  List snapshots:
+    sudo mint-snapshot list
+
+  Restore a snapshot:
+    sudo mint-snapshot restore <number>
+
+  Manual Snapper:
+    sudo snapper create --description "test"
+    sudo snapper list
+    sudo snapper rollback <number>
+
+  Boot-time recovery:
+    In GRUB, select a snapshot from the "Btrfs snapshots" submenu
+    to boot into a previous system state without losing data.
+
+================================================================================
+13. TROUBLESHOOTING
+================================================================================
+
+  System health check:
+    sudo mint-doctor
+
+  Check journal logs:
+    journalctl -xe                 all logs
+    journalctl -u <service>        specific service
+
+  Fix broken packages:
+    sudo pacman -Syu --overwrite='*'
+
+  Fix keyring errors:
+    sudo pacman-key --init
+    sudo pacman-key --populate archlinux blackarch
+
+  Fix black screen on boot:
+    At GRUB, press E → add "nomodeset" to kernel line → F10
+
+  Can't connect to WiFi:
+    nmcli dev wifi list
+    nmcli dev wifi connect "SSID" password "PASSWORD"
+
+  Reset desktop to defaults:
+    rm -rf ~/.config/plasma* ~/.local/share/plasma*
+    plasmashell --replace &
+
+  Run doctor:
+    sudo mint-doctor
+
+================================================================================
+14. CONTRIBUTING
+================================================================================
+
+  GitHub: https://github.com/og-py3/mint-arch-linux
+
+  How to contribute:
+    1. Fork the repo
+    2. Create a branch: git checkout -b feature/my-feature
+    3. Make your changes
+    4. Push: git push origin feature/my-feature
+    5. Open a Pull Request
+
+  Report bugs:
+    https://github.com/og-py3/mint-arch-linux/issues/new?template=bug_report.md
+
+  Request features:
+    https://github.com/og-py3/mint-arch-linux/issues/new?template=feature_request.md
+
+  Build environment:
+    The Docker build environment is in mint-arch-linux/docker-build/
+
+================================================================================
+  Mint Arch Linux — Rolling Arch · KDE Plasma 6 · BlackArch · 2800+ Tools
+  https://github.com/og-py3/mint-arch-linux
+================================================================================
