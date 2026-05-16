@@ -2,7 +2,7 @@
 
   > Rolling Arch Linux — KDE Plasma 6 · 150+ Security Tools · Browser Desktop
 
-  [![ISO Build](https://github.com/og-py3/mint-arch-linux/actions/workflows/build-iso.yml/badge.svg)](https://github.com/og-py3/mint-arch-linux/actions/workflows/build-iso.yml)
+  [![ISO Build](https://img.shields.io/badge/ISO%20Build%20%23288-passing-brightgreen?logo=github)](https://github.com/og-py3/mint-arch-linux/actions/runs/25957594755)
   [![Latest Release](https://img.shields.io/github/v/release/og-py3/mint-arch-linux)](https://github.com/og-py3/mint-arch-linux/releases/latest)
   [![License](https://img.shields.io/github/license/og-py3/mint-arch-linux)](LICENSE)
 
