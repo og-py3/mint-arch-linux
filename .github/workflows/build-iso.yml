@@ -14,6 +14,9 @@ on:
         type: choice
         options: [ stable, beta, nightly ]
 
+permissions:
+  contents: write
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -79,25 +82,70 @@ jobs:
           echo "name=$(basename $ISO)" >> $GITHUB_OUTPUT
           echo "size=$(du -sh $ISO | cut -f1)" >> $GITHUB_OUTPUT
           echo "sha256=$(sha256sum $ISO | cut -d' ' -f1)" >> $GITHUB_OUTPUT
+          echo "md5=$(md5sum $ISO | cut -d' ' -f1)" >> $GITHUB_OUTPUT
+          sha256sum $ISO | sed "s|$ISO|$(basename $ISO)|" > /tmp/output/SHA256SUM
+          md5sum    $ISO | sed "s|$ISO|$(basename $ISO)|" > /tmp/output/MD5SUM
 
       - name: Upload ISO artifact
         uses: actions/upload-artifact@v4
         with:
           name: mintarch-iso-${{ github.run_number }}
-          path: /tmp/output/mintarch-*.iso
-          retention-days: 7
+          path: |
+            /tmp/output/mintarch-*.iso
+            /tmp/output/SHA256SUM
+            /tmp/output/MD5SUM
+          retention-days: 14
+
+      - name: Publish nightly release (main branch only)
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: nightly
+          name: "Mint Arch Linux — Nightly Build (${{ github.run_number }})"
+          prerelease: true
+          draft: false
+          make_latest: false
+          body: |
+            # Mint Arch Linux — Nightly Build
+
+            > Auto-generated from the latest commit on `main`. Not production-ready — use a [stable release](https://github.com/og-py3/mint-arch-linux/releases/latest) for everyday use.
+
+            ## Build Info
+
+            | | |
+            |---|---|
+            | **Run** | [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) |
+            | **Commit** | [`${{ github.sha }}`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}) |
+            | **ISO** | `${{ steps.iso.outputs.name }}` |
+            | **Size** | ${{ steps.iso.outputs.size }} |
+            | **SHA256** | `${{ steps.iso.outputs.sha256 }}` |
+            | **MD5** | `${{ steps.iso.outputs.md5 }}` |
+
+            ## Try Without Installing
+
+            [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/og-py3/mint-arch-linux)
+
+            Boots the real Mint Arch Linux ISO in a QEMU VM inside your browser on port 3000.
+            Login: **mint** / **mint**
+          files: |
+            /tmp/output/mintarch-*.iso
+            /tmp/output/SHA256SUM
+            /tmp/output/MD5SUM
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build summary
         run: |
-          echo "## Build Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "## ✅ Build Complete!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| | |" >> $GITHUB_STEP_SUMMARY
           echo "|---|---|" >> $GITHUB_STEP_SUMMARY
           echo "| **ISO** | ${{ steps.iso.outputs.name }} |" >> $GITHUB_STEP_SUMMARY
           echo "| **Size** | ${{ steps.iso.outputs.size }} |" >> $GITHUB_STEP_SUMMARY
           echo "| **SHA256** | \`${{ steps.iso.outputs.sha256 }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **MD5** | \`${{ steps.iso.outputs.md5 }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "To publish a release, push a version tag:" >> $GITHUB_STEP_SUMMARY
+          echo "### Publish a stable release" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "git tag v2025.05 && git push origin v2025.05" >> $GITHUB_STEP_SUMMARY
+          echo "git tag v2026.05 && git push origin v2026.05" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
