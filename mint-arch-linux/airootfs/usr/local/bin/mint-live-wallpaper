@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# =============================================================================
+# Mint Arch Linux — Live Video Wallpaper Launcher
+# Sets the Minecraft Northern Lights video as desktop background
+# Uses mpvpaper (Wayland) or xwinwrap+mpv (X11)
+# =============================================================================
+
+VIDEO="/usr/share/mint-arch/wallpapers/mintarch-live-wallpaper.mp4"
+FALLBACK_VIDEO="$HOME/.local/share/mint-arch/wallpapers/mintarch-live-wallpaper.mp4"
+
+[ -f "$FALLBACK_VIDEO" ] && VIDEO="$FALLBACK_VIDEO"
+
+if [ ! -f "$VIDEO" ]; then
+    echo "Video not found: $VIDEO"
+    exit 1
+fi
+
+# Detect Wayland or X11
+if [ -n "${WAYLAND_DISPLAY:-}" ]; then
+    # Wayland — use mpvpaper
+    if command -v mpvpaper &>/dev/null; then
+        # Kill existing instance
+        pkill -f "mpvpaper" 2>/dev/null || true
+        sleep 0.5
+        # Start mpvpaper on all outputs
+        mpvpaper -o "--no-audio --loop=inf --panscan=1.0 --vo=gpu" '*' "$VIDEO" &
+        echo "Live wallpaper started (mpvpaper, Wayland)"
+    else
+        echo "mpvpaper not installed. Run: sudo pacman -S mpvpaper"
+        echo "Or install from AUR: paru -S mpvpaper"
+        exit 1
+    fi
+else
+    # X11 fallback — use xwinwrap + mpv
+    if command -v xwinwrap &>/dev/null && command -v mpv &>/dev/null; then
+        pkill -f "xwinwrap" 2>/dev/null || true
+        sleep 0.5
+        xwinwrap -fs -fdt -ni -b -nf -ov -s -st -- \
+            mpv -wid WID --no-audio --loop=inf --panscan=1.0 "$VIDEO" &
+        echo "Live wallpaper started (xwinwrap+mpv, X11)"
+    elif command -v mpv &>/dev/null; then
+        # Fallback: just play fullscreen
+        pkill -f "mpv.*wallpaper" 2>/dev/null || true
+        mpv --no-audio --loop=inf --fs --ontop --no-border \
+            --window-scale=1 --geometry=0:0 "$VIDEO" &
+        echo "Live wallpaper started (mpv fallback)"
+    else
+        echo "mpv not installed. Run: sudo pacman -S mpv"
+        exit 1
+    fi
+fi
