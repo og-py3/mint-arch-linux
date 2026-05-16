@@ -4,27 +4,36 @@ Backend=OpenGL
 GLCore=true
 HiddenPreviews=5
 OpenGLIsUnsafe=false
-WindowsBlockCompositing=false
-AnimationSpeed=3
+WindowsBlockCompositing=true
+AnimationSpeed=2
+LatencyPolicy=Low
 
 [Effect-blur]
-BlurStrength=7
-NoiseStrength=2
+BlurStrength=9
+NoiseStrength=1
 
-[Effect-overview]
-BorderActivate=9
+[Effect-contrast]
+Contrast=0.25
+Intensity=1.6
+Saturation=1.0
 
 [Plugins]
 blurEnabled=true
 contrastEnabled=true
+backgroundcontrastEnabled=true
 kwin4_effect_translucencyEnabled=true
 kwin4_effect_fadeEnabled=true
 kwin4_effect_slidingpopupsEnabled=true
 kwin4_effect_scaleEnabled=true
-backgroundcontrastEnabled=true
+kwin4_effect_squashEnabled=true
+
+[NightColor]
+Active=false
 
 [Windows]
 BorderlessMaximizedWindows=false
+FocusPolicy=ClickToFocus
+RollOverDesktops=true
 
 [Desktops]
 Number=4
