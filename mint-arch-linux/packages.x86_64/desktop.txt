@@ -1,5 +1,5 @@
 # =============================================================================
-# Mint OS — KDE Plasma Desktop (Wayland-first)
+# Mint Arch Linux — KDE Plasma 6 Desktop (Wayland-first)
 # =============================================================================
 
 # Wayland
@@ -10,11 +10,9 @@ xdg-desktop-portal
 xdg-desktop-portal-kde
 xorg-xwayland
 
-# KDE Plasma
+# KDE Plasma 6
 plasma-meta
-plasma-wayland-session
 kwin
-kwin-wayland
 plasma-pa
 plasma-nm
 plasma-systemmonitor
@@ -41,7 +39,6 @@ kfind
 krunner
 kwalletmanager
 filelight
-ksysguard
 partitionmanager
 kde-gtk-config
 breeze-gtk
@@ -54,11 +51,10 @@ breeze-icons
 
 # Wayland session tools
 kwayland
-kwayland-server
 qt5-wayland
 qt6-wayland
 layer-shell-qt
-kglobalaccel5
+kglobalaccel
 
 # XDG
 xdg-user-dirs
@@ -83,7 +79,7 @@ gst-plugins-good
 gst-plugins-bad
 gst-plugins-ugly
 gst-libav
-phonon-qt5-gstreamer
+phonon-qt6-gstreamer
 
 # Browser
 firefox
@@ -93,17 +89,16 @@ libreoffice-fresh
 
 # System
 packagekit
-packagekit-qt5
+packagekit-qt6
 fwupd
 flatpak
 appstream
 discover
 
-# GPU drivers (auto-detected)
+# GPU drivers (auto-detected at boot)
 mesa
 mesa-utils
 vulkan-icd-loader
-lib32-vulkan-icd-loader
 xf86-video-vesa
 xf86-video-fbdev
 xf86-video-vmware
@@ -115,16 +110,13 @@ spice-vdagent
 # Notifications
 libnotify
 
-# Live Video Wallpaper
+# Live Video Wallpaper (mpvpaper on Wayland, mpv fallback)
 mpv
-mpvpaper
-xwinwrap
 
-# KDE blur & effects (Wayland compositor)
-kdecoration
-kwin-effects-blur
+# KDE multimedia
 qt6-multimedia
 qt6-multimedia-ffmpeg
+kdecoration
 
 # Terminal emulator extras
 tmux
