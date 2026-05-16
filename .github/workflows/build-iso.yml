@@ -1,151 +1,170 @@
 name: Build Mint Arch Linux ISO
 
-on:
-  push:
-    branches: [ main, develop ]
-  schedule:
-    - cron: '0 2 * * 0'
-  workflow_dispatch:
-    inputs:
-      channel:
-        description: 'Build channel'
-        required: true
-        default: 'stable'
-        type: choice
-        options: [ stable, beta, nightly ]
+  on:
+    push:
+      branches: [ main, develop ]
+    schedule:
+      - cron: '0 2 * * 0'
+    workflow_dispatch:
+      inputs:
+        channel:
+          description: 'Build channel'
+          required: true
+          default: 'stable'
+          type: choice
+          options: [ stable, beta, nightly ]
 
-permissions:
-  contents: write
+  permissions:
+    contents: write
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
 
-jobs:
-  build:
-    name: Build ISO
-    runs-on: ubuntu-latest
-    container:
-      image: archlinux:latest
-      options: --privileged
+  jobs:
+    build:
+      name: Build ISO
+      runs-on: ubuntu-latest
+      container:
+        image: archlinux:latest
+        options: --privileged
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
 
-      - name: Initialize pacman keyring
-        run: |
-          pacman-key --init
-          pacman-key --populate archlinux
-          pacman -Sy --noconfirm archlinux-keyring
+        - name: Initialize pacman keyring
+          run: |
+            pacman-key --init
+            pacman-key --populate archlinux
+            pacman -Sy --noconfirm archlinux-keyring
 
-      - name: Install build dependencies
-        run: |
-          pacman -Su --noconfirm
-          pacman -S --noconfirm --needed \
-            archiso dosfstools e2fsprogs libisoburn \
-            squashfs-tools mtools grub efibootmgr \
-            syslinux curl wget git
+        - name: Install build dependencies
+          run: |
+            pacman -Su --noconfirm
+            pacman -S --noconfirm --needed \
+              archiso dosfstools e2fsprogs libisoburn \
+              squashfs-tools mtools grub efibootmgr \
+              syslinux curl wget git
 
-      - name: Set up BlackArch repository
-        run: |
-          curl -fsSL https://blackarch.org/strap.sh -o /tmp/strap.sh
-          chmod +x /tmp/strap.sh
-          bash /tmp/strap.sh || true
-          pacman -Sy --noconfirm 2>/dev/null || true
+        - name: Set up BlackArch repository
+          run: |
+            curl -fsSL https://blackarch.org/strap.sh -o /tmp/strap.sh
+            chmod +x /tmp/strap.sh
+            bash /tmp/strap.sh || true
+            pacman -Sy --noconfirm 2>/dev/null || true
 
-      - name: Set file permissions
-        working-directory: mint-arch-linux
-        run: |
-          chmod +x build.sh
-          chmod +x airootfs/usr/local/bin/mint-* 2>/dev/null || true
-          chmod 440 airootfs/etc/sudoers.d/mintarch 2>/dev/null || true
+        - name: Set file permissions
+          working-directory: mint-arch-linux
+          run: |
+            chmod +x build.sh
+            chmod +x airootfs/usr/local/bin/mint-* 2>/dev/null || true
+            chmod 440 airootfs/etc/sudoers.d/mintarch 2>/dev/null || true
 
-      - name: Build ISO
-        working-directory: mint-arch-linux
-        env:
-          OUT_DIR: /tmp/output
-          CHANNEL: ${{ github.event.inputs.channel || 'stable' }}
-          CI: "true"
-        run: ./build.sh --output /tmp/output --ci
+        - name: Build ISO
+          working-directory: mint-arch-linux
+          env:
+            OUT_DIR: /tmp/output
+            CHANNEL: ${{ github.event.inputs.channel || 'stable' }}
+            CI: "true"
+          run: ./build.sh --output /tmp/output --ci
 
-      - name: Get ISO info
-        id: iso
-        run: |
-          ISO=$(ls /tmp/output/mintarch-*.iso 2>/dev/null | head -1)
-          if [ -z "$ISO" ]; then
-            echo "ERROR: No ISO found in /tmp/output" >&2
-            ls -la /tmp/output/ 2>/dev/null || true
-            exit 1
-          fi
-          echo "path=$ISO" >> $GITHUB_OUTPUT
-          echo "name=$(basename $ISO)" >> $GITHUB_OUTPUT
-          echo "size=$(du -sh $ISO | cut -f1)" >> $GITHUB_OUTPUT
-          echo "sha256=$(sha256sum $ISO | cut -d' ' -f1)" >> $GITHUB_OUTPUT
-          echo "md5=$(md5sum $ISO | cut -d' ' -f1)" >> $GITHUB_OUTPUT
-          sha256sum $ISO | sed "s|$ISO|$(basename $ISO)|" > /tmp/output/SHA256SUM
-          md5sum    $ISO | sed "s|$ISO|$(basename $ISO)|" > /tmp/output/MD5SUM
+        - name: Get ISO info
+          id: iso
+          run: |
+            ISO=$(ls /tmp/output/mintarch-*.iso 2>/dev/null | head -1)
+            if [ -z "$ISO" ]; then
+              echo "ERROR: No ISO found in /tmp/output" >&2
+              ls -la /tmp/output/ 2>/dev/null || true
+              exit 1
+            fi
+            echo "path=$ISO" >> $GITHUB_OUTPUT
+            echo "name=$(basename $ISO)" >> $GITHUB_OUTPUT
+            echo "size=$(du -sh $ISO | cut -f1)" >> $GITHUB_OUTPUT
 
-      - name: Upload ISO artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: mintarch-iso-${{ github.run_number }}
-          path: |
-            /tmp/output/mintarch-*.iso
-            /tmp/output/SHA256SUM
-            /tmp/output/MD5SUM
-          retention-days: 14
+            SHA256=$(sha256sum $ISO | cut -d' ' -f1)
+            MD5=$(md5sum $ISO | cut -d' ' -f1)
+            echo "sha256=$SHA256" >> $GITHUB_OUTPUT
+            echo "md5=$MD5" >> $GITHUB_OUTPUT
 
-      - name: Publish nightly release (main branch only)
-        if: github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: nightly
-          name: "Mint Arch Linux — Nightly Build (${{ github.run_number }})"
-          prerelease: true
-          draft: false
-          make_latest: false
-          body: |
-            # Mint Arch Linux — Nightly Build
+            sha256sum $ISO | sed "s|$ISO|$(basename $ISO)|" > /tmp/output/SHA256SUM
+            md5sum    $ISO | sed "s|$ISO|$(basename $ISO)|" > /tmp/output/MD5SUM
 
-            > Auto-generated from the latest commit on `main`. Not production-ready — use a [stable release](https://github.com/og-py3/mint-arch-linux/releases/latest) for everyday use.
+        - name: Upload ISO artifact
+          uses: actions/upload-artifact@v4
+          with:
+            name: mintarch-iso-${{ github.run_number }}
+            path: |
+              /tmp/output/mintarch-*.iso
+              /tmp/output/SHA256SUM
+              /tmp/output/MD5SUM
+            retention-days: 14
 
-            ## Build Info
+        - name: Publish nightly release (main branch only)
+          if: github.ref == 'refs/heads/main'
+          uses: softprops/action-gh-release@v2
+          with:
+            tag_name: nightly
+            name: "Mint Arch Linux — Nightly Build #${{ github.run_number }}"
+            prerelease: true
+            draft: false
+            make_latest: false
+            body: |
+              # Mint Arch Linux — Nightly Build
 
-            | | |
-            |---|---|
-            | **Run** | [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) |
-            | **Commit** | [`${{ github.sha }}`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}) |
-            | **ISO** | `${{ steps.iso.outputs.name }}` |
-            | **Size** | ${{ steps.iso.outputs.size }} |
-            | **SHA256** | `${{ steps.iso.outputs.sha256 }}` |
-            | **MD5** | `${{ steps.iso.outputs.md5 }}` |
+              > Auto-generated from the latest commit on `main`. Not production-ready — use a [stable release](https://github.com/og-py3/mint-arch-linux/releases/latest) for everyday use.
 
-            ## Try Without Installing
+              ---
 
-            [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/og-py3/mint-arch-linux)
+              ## Build Info
 
-            Boots the real Mint Arch Linux ISO in a QEMU VM inside your browser on port 3000.
-            Login: **mint** / **mint**
-          files: |
-            /tmp/output/mintarch-*.iso
-            /tmp/output/SHA256SUM
-            /tmp/output/MD5SUM
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              | | |
+              |---|---|
+              | **Run** | [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) |
+              | **Commit** | [`${{ github.sha }}`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}) |
+              | **ISO** | `${{ steps.iso.outputs.name }}` |
+              | **Size** | ${{ steps.iso.outputs.size }} |
+              | **SHA256** | `${{ steps.iso.outputs.sha256 }}` |
+              | **MD5** | `${{ steps.iso.outputs.md5 }}` |
 
-      - name: Build summary
-        run: |
-          echo "## ✅ Build Complete!" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| | |" >> $GITHUB_STEP_SUMMARY
-          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
-          echo "| **ISO** | ${{ steps.iso.outputs.name }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Size** | ${{ steps.iso.outputs.size }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| **SHA256** | \`${{ steps.iso.outputs.sha256 }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| **MD5** | \`${{ steps.iso.outputs.md5 }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Publish a stable release" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "git tag v2026.05 && git push origin v2026.05" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+              ---
+
+              ## Try Without Installing
+
+              [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/og-py3/mint-arch-linux)
+
+              Boots the real Mint Arch Linux ISO in a QEMU VM inside your browser.
+              Login: **mint** / **mint**
+
+              ---
+
+              ## To publish a stable release
+
+              ```bash
+              git tag v2026.06 && git push origin v2026.06
+              ```
+
+              *Built on Arch Linux · Powered by BlackArch · KDE Plasma 6*
+            files: |
+              /tmp/output/mintarch-*.iso
+              /tmp/output/SHA256SUM
+              /tmp/output/MD5SUM
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+        - name: Build summary
+          run: |
+            echo "## ✅ Build Complete!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| | |" >> $GITHUB_STEP_SUMMARY
+            echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+            echo "| **ISO** | ${{ steps.iso.outputs.name }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Size** | ${{ steps.iso.outputs.size }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| **SHA256** | `${{ steps.iso.outputs.sha256 }}` |" >> $GITHUB_STEP_SUMMARY
+            echo "| **MD5** | `${{ steps.iso.outputs.md5 }}` |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### To publish a stable release, push a version tag:" >> $GITHUB_STEP_SUMMARY
+            echo "```bash" >> $GITHUB_STEP_SUMMARY
+            echo "git tag v2026.06 && git push origin v2026.06" >> $GITHUB_STEP_SUMMARY
+            echo "```" >> $GITHUB_STEP_SUMMARY
+  
