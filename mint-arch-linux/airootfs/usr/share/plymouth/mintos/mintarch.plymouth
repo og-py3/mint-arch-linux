@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=Mint Arch
+Description=Mint Arch Linux Boot Theme
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/mintos
+ScriptFile=/usr/share/plymouth/mintos/mintarch.script
