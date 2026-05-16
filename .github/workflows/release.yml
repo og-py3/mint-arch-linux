@@ -1,204 +1,236 @@
 name: Release Mint Arch Linux
 
-on:
-  push:
-    tags:
-      - 'v*.*'
-      - 'v*.*.*'
+  on:
+    push:
+      tags:
+        - 'v*.*'
+        - 'v*.*.*'
 
-permissions:
-  contents: write
+  permissions:
+    contents: write
 
-jobs:
-  release:
-    name: Build & Publish Release
-    runs-on: ubuntu-latest
-    container:
-      image: archlinux:latest
-      options: --privileged
+  jobs:
+    release:
+      name: Build & Publish Release
+      runs-on: ubuntu-latest
+      container:
+        image: archlinux:latest
+        options: --privileged
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+          with:
+            fetch-depth: 0
 
-      - name: Parse version info
-        id: version
-        run: |
-          TAG="${{ github.ref_name }}"
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
-          echo "date=$(date +%Y.%m.%d)" >> $GITHUB_OUTPUT
-          echo "year=$(date +%Y)" >> $GITHUB_OUTPUT
-          echo "month=$(date +%m)" >> $GITHUB_OUTPUT
-          if echo "$TAG" | grep -qE '(alpha|beta|rc)'; then
-            echo "prerelease=true" >> $GITHUB_OUTPUT
-            echo "channel=beta" >> $GITHUB_OUTPUT
-          else
-            echo "prerelease=false" >> $GITHUB_OUTPUT
-            echo "channel=stable" >> $GITHUB_OUTPUT
-          fi
+        - name: Parse version info
+          id: version
+          run: |
+            TAG="${{ github.ref_name }}"
+            echo "tag=$TAG" >> $GITHUB_OUTPUT
+            echo "date=$(date +%Y.%m.%d)" >> $GITHUB_OUTPUT
+            echo "year=$(date +%Y)" >> $GITHUB_OUTPUT
+            echo "month=$(date +%m)" >> $GITHUB_OUTPUT
+            if echo "$TAG" | grep -qE '(alpha|beta|rc)'; then
+              echo "prerelease=true" >> $GITHUB_OUTPUT
+              echo "channel=beta" >> $GITHUB_OUTPUT
+            else
+              echo "prerelease=false" >> $GITHUB_OUTPUT
+              echo "channel=stable" >> $GITHUB_OUTPUT
+            fi
 
-      - name: Initialize pacman keyring
-        run: |
-          pacman-key --init
-          pacman-key --populate archlinux
-          pacman -Sy --noconfirm archlinux-keyring
+        - name: Initialize pacman keyring
+          run: |
+            pacman-key --init
+            pacman-key --populate archlinux
+            pacman -Sy --noconfirm archlinux-keyring
 
-      - name: Install build dependencies
-        run: |
-          pacman -Su --noconfirm
-          pacman -S --noconfirm --needed \
-            archiso dosfstools e2fsprogs libisoburn \
-            squashfs-tools mtools grub efibootmgr \
-            syslinux curl wget git
+        - name: Install build dependencies
+          run: |
+            pacman -Su --noconfirm
+            pacman -S --noconfirm --needed \
+              archiso dosfstools e2fsprogs libisoburn \
+              squashfs-tools mtools grub efibootmgr \
+              syslinux curl wget git
 
-      - name: Set up BlackArch repository
-        run: |
-          curl -fsSL https://blackarch.org/strap.sh -o /tmp/strap.sh
-          chmod +x /tmp/strap.sh
-          bash /tmp/strap.sh || true
-          pacman -Sy --noconfirm 2>/dev/null || true
+        - name: Set up BlackArch repository
+          run: |
+            curl -fsSL https://blackarch.org/strap.sh -o /tmp/strap.sh
+            chmod +x /tmp/strap.sh
+            bash /tmp/strap.sh || true
+            pacman -Sy --noconfirm 2>/dev/null || true
 
-      - name: Set file permissions
-        working-directory: mint-arch-linux
-        run: |
-          chmod +x build.sh
-          chmod +x airootfs/usr/local/bin/mint-* 2>/dev/null || true
-          chmod 440 airootfs/etc/sudoers.d/mintarch 2>/dev/null || true
+        - name: Set file permissions
+          working-directory: mint-arch-linux
+          run: |
+            chmod +x build.sh
+            chmod +x airootfs/usr/local/bin/mint-* 2>/dev/null || true
+            chmod 440 airootfs/etc/sudoers.d/mintarch 2>/dev/null || true
 
-      - name: Build ISO
-        working-directory: mint-arch-linux
-        env:
-          OUT_DIR: /tmp/output
-          CHANNEL: ${{ steps.version.outputs.channel }}
-          CI: "true"
-        run: ./build.sh --output /tmp/output --ci
+        - name: Build ISO
+          working-directory: mint-arch-linux
+          env:
+            OUT_DIR: /tmp/output
+            CHANNEL: ${{ steps.version.outputs.channel }}
+            CI: "true"
+          run: ./build.sh --output /tmp/output --ci
 
-      - name: Generate checksums
-        id: checksum
-        run: |
-          ISO=$(ls /tmp/output/mintarch-*.iso 2>/dev/null | head -1)
-          if [ -z "$ISO" ]; then
-            echo "ERROR: No ISO found" >&2
-            exit 1
-          fi
-          echo "iso_path=$ISO" >> $GITHUB_OUTPUT
-          echo "iso_name=$(basename $ISO)" >> $GITHUB_OUTPUT
-          echo "iso_size=$(du -sh $ISO | cut -f1)" >> $GITHUB_OUTPUT
+        - name: Generate checksums
+          id: checksum
+          run: |
+            ISO=$(ls /tmp/output/mintarch-*.iso 2>/dev/null | head -1)
+            if [ -z "$ISO" ]; then
+              echo "ERROR: No ISO found in /tmp/output" >&2
+              ls -la /tmp/output/ 2>/dev/null || true
+              exit 1
+            fi
+            echo "iso_path=$ISO" >> $GITHUB_OUTPUT
+            echo "iso_name=$(basename $ISO)" >> $GITHUB_OUTPUT
+            echo "iso_size=$(du -sh $ISO | cut -f1)" >> $GITHUB_OUTPUT
 
-          SHA256=$(sha256sum $ISO | cut -d' ' -f1)
-          MD5=$(md5sum $ISO | cut -d' ' -f1)
-          echo "sha256=$SHA256" >> $GITHUB_OUTPUT
-          echo "md5=$MD5" >> $GITHUB_OUTPUT
+            SHA256=$(sha256sum $ISO | cut -d' ' -f1)
+            MD5=$(md5sum $ISO | cut -d' ' -f1)
+            echo "sha256=$SHA256" >> $GITHUB_OUTPUT
+            echo "md5=$MD5" >> $GITHUB_OUTPUT
 
-          echo "$SHA256  $(basename $ISO)" > /tmp/output/${{ steps.version.outputs.tag }}-SHA256SUM
-          echo "$MD5  $(basename $ISO)"   > /tmp/output/${{ steps.version.outputs.tag }}-MD5SUM
+            echo "$SHA256  $(basename $ISO)" > /tmp/output/${{ steps.version.outputs.tag }}-SHA256SUM
+            echo "$MD5  $(basename $ISO)"   > /tmp/output/${{ steps.version.outputs.tag }}-MD5SUM
 
-      - name: Generate changelog
-        id: changelog
-        run: |
-          PREV_TAG=$(git tag --sort=-version:refname | grep -v "${{ steps.version.outputs.tag }}" | head -1 || true)
-          if [ -n "$PREV_TAG" ]; then
-            LOG=$(git log ${PREV_TAG}..${{ steps.version.outputs.tag }} --oneline --no-decorate 2>/dev/null | head -30 | sed 's/^/- /' || echo "- Initial release")
-          else
-            LOG="- Initial release of Mint Arch Linux"
-          fi
-          echo "$LOG" > /tmp/changelog.txt
-          echo "prev_tag=$PREV_TAG" >> $GITHUB_OUTPUT
+        - name: Generate changelog
+          id: changelog
+          run: |
+            PREV_TAG=$(git tag --sort=-version:refname | grep -v "${{ steps.version.outputs.tag }}" | head -1 || true)
+            if [ -n "$PREV_TAG" ]; then
+              LOG=$(git log "${PREV_TAG}..${{ steps.version.outputs.tag }}" --oneline --no-decorate 2>/dev/null | head -30 | sed 's/^/- /' || echo "- Initial release")
+            else
+              LOG="- Initial release of Mint Arch Linux"
+            fi
+            {
+              echo "log<<CHANGELOG_EOF"
+              echo "$LOG"
+              echo "CHANGELOG_EOF"
+            } >> $GITHUB_OUTPUT
+            echo "prev_tag=$PREV_TAG" >> $GITHUB_OUTPUT
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          name: "Mint Arch Linux ${{ steps.version.outputs.tag }} (${{ steps.version.outputs.date }})"
-          prerelease: ${{ steps.version.outputs.prerelease }}
-          draft: false
-          body: |
-            # Mint Arch Linux ${{ steps.version.outputs.tag }}
+        - name: Create GitHub Release
+          uses: softprops/action-gh-release@v2
+          with:
+            tag_name: ${{ steps.version.outputs.tag }}
+            name: "Mint Arch Linux ${{ steps.version.outputs.tag }} (${{ steps.version.outputs.date }}) ✅"
+            prerelease: ${{ steps.version.outputs.prerelease }}
+            draft: false
+            body: |
+              # Mint Arch Linux ${{ steps.version.outputs.tag }}
 
-            > Rolling Arch Linux — KDE Plasma 6 · 150+ Security Tools · Browser Desktop
+              > Rolling Arch Linux — KDE Plasma 6 · 150+ Security Tools · Browser Desktop
 
-            ---
+              [![ISO Build](https://github.com/og-py3/mint-arch-linux/actions/workflows/release.yml/badge.svg)](https://github.com/og-py3/mint-arch-linux/actions/workflows/release.yml)
 
-            ## What's New
+              ---
 
-            $(cat /tmp/changelog.txt)
+              ## ✅ ISO Build — Successful
 
-            ---
+              ---
 
-            ## ISO Details
+              ## What's New
 
-            | Property | Value |
-            |---|---|
-            | **Version** | ${{ steps.version.outputs.tag }} |
-            | **Build Date** | ${{ steps.version.outputs.date }} |
-            | **Channel** | ${{ steps.version.outputs.channel }} |
-            | **ISO Size** | ${{ steps.checksum.outputs.iso_size }} |
-            | **SHA256** | `${{ steps.checksum.outputs.sha256 }}` |
-            | **MD5** | `${{ steps.checksum.outputs.md5 }}` |
+              ${{ steps.changelog.outputs.log }}
 
-            ---
+              ---
 
-            ## Installation
+              ## ISO Details
 
-            **Flash to USB (Linux/Mac)**
-            ```bash
-            sudo dd if=${{ steps.checksum.outputs.iso_name }} of=/dev/sdX bs=4M status=progress oflag=sync
-            ```
+              | Property | Value |
+              |---|---|
+              | **Filename** | `${{ steps.checksum.outputs.iso_name }}` |
+              | **Version** | ${{ steps.version.outputs.tag }} |
+              | **Build Date** | ${{ steps.version.outputs.date }} |
+              | **Channel** | ${{ steps.version.outputs.channel }} |
+              | **ISO Size** | ${{ steps.checksum.outputs.iso_size }} |
+              | **SHA256** | `${{ steps.checksum.outputs.sha256 }}` |
+              | **MD5** | `${{ steps.checksum.outputs.md5 }}` |
+              | **Base** | Arch Linux (rolling) |
+              | **Desktop** | KDE Plasma 6 (Wayland) |
+              | **Default user** | `mint` / `mint` |
+              | **Root password** | `toor` |
 
-            **Windows** — Use Rufus, balenaEtcher, or Ventoy
+              ---
 
-            **VirtualBox / VMware**
-            ```
-            New VM → Arch Linux 64-bit → Enable EFI → 4GB RAM min → Attach ISO
-            sudo mint-installer
-            ```
+              ## Verify the ISO
 
-            ---
+              ```bash
+              sha256sum ${{ steps.checksum.outputs.iso_name }}
+              # Expected: ${{ steps.checksum.outputs.sha256 }}
+              ```
 
-            ## Pre-installed Tools
+              ---
 
-            | Category | Tools |
-            |---|---|
-            | Network Scanning | nmap, masscan, netdiscover, arp-scan, hping3 |
-            | Web Testing | sqlmap, nikto, gobuster, ffuf, wfuzz, zaproxy |
-            | Password Cracking | hashcat, john, hydra, medusa, crunch |
-            | Wireless | aircrack-ng, kismet, wireshark, bettercap, hcxtools |
-            | Exploitation | metasploit, exploitdb, python-pwntools, impacket |
-            | Forensics | autopsy, volatility3, binwalk, exiftool, sleuthkit |
-            | Reverse Engineering | radare2, ghidra, gdb, pwndbg, jadx |
-            | OSINT | maltego, sherlock, theharvester, amass, spiderfoot |
-            | Defensive | snort, suricata, rkhunter, lynis, clamav |
+              ## Installation
 
-            > **2800+ more tools** via BlackArch:
-            > ```bash
-            > sudo mint-tools-setup
-            > ```
+              **Flash to USB (Linux/macOS)**
+              ```bash
+              sudo dd if=${{ steps.checksum.outputs.iso_name }} of=/dev/sdX bs=4M status=progress oflag=sync
+              ```
 
-            ---
+              **Windows** — Use [Rufus](https://rufus.ie), [balenaEtcher](https://etcher.balena.io), or [Ventoy](https://www.ventoy.net)
 
-            ## Try Without Installing
+              **VirtualBox / VMware / QEMU**
+              ```
+              New VM → Arch Linux 64-bit → Enable EFI → 4 GB RAM → Attach ISO
+              sudo mint-installer
+              ```
 
-            [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/og-py3/mint-arch-linux)
+              ---
 
-            ---
+              ## Try Without Installing
 
-            *Built on Arch Linux · Powered by BlackArch · KDE Plasma 6*
-          files: |
-            /tmp/output/mintarch-*.iso
-            /tmp/output/${{ steps.version.outputs.tag }}-SHA256SUM
-            /tmp/output/${{ steps.version.outputs.tag }}-MD5SUM
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/og-py3/mint-arch-linux)
 
-      - name: Summary
-        run: |
-          echo "## Release Published!" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Tag:** ${{ steps.version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
-          echo "**ISO:** ${{ steps.checksum.outputs.iso_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Size:** ${{ steps.checksum.outputs.iso_size }}" >> $GITHUB_STEP_SUMMARY
-          echo "**SHA256:** \`${{ steps.checksum.outputs.sha256 }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "[View Release](https://github.com/og-py3/mint-arch-linux/releases/tag/${{ steps.version.outputs.tag }})" >> $GITHUB_STEP_SUMMARY
+              Boots the real Mint Arch Linux ISO in a QEMU VM inside your browser.
+              Login: **mint** / **mint**
+
+              ---
+
+              ## Pre-installed Security Tools
+
+              | Category | Tools |
+              |---|---|
+              | Network Scanning | nmap, masscan, netdiscover, arp-scan, hping3 |
+              | Web Testing | sqlmap, nikto, gobuster, ffuf, wfuzz, zaproxy |
+              | Password Cracking | hashcat, john, hydra, medusa, crunch |
+              | Wireless | aircrack-ng, kismet, wireshark, bettercap, hcxtools |
+              | Exploitation | metasploit, exploitdb, python-pwntools, impacket |
+              | Forensics | autopsy, volatility3, binwalk, exiftool, sleuthkit |
+              | Reverse Engineering | radare2, ghidra, gdb, pwndbg, jadx |
+              | OSINT | maltego, sherlock, theharvester, amass, spiderfoot |
+              | Defensive | snort, suricata, rkhunter, lynis, clamav |
+
+              > **2800+ more tools** via BlackArch:
+              > ```bash
+              > sudo mint-tools-setup
+              > ```
+
+              ---
+
+              *Built on Arch Linux · Powered by BlackArch · KDE Plasma 6*
+            files: |
+              /tmp/output/mintarch-*.iso
+              /tmp/output/${{ steps.version.outputs.tag }}-SHA256SUM
+              /tmp/output/${{ steps.version.outputs.tag }}-MD5SUM
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+        - name: Summary
+          run: |
+            echo "## ✅ Release Published!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| | |" >> $GITHUB_STEP_SUMMARY
+            echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+            echo "| **Tag** | ${{ steps.version.outputs.tag }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| **ISO** | ${{ steps.checksum.outputs.iso_name }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Size** | ${{ steps.checksum.outputs.iso_size }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| **SHA256** | `${{ steps.checksum.outputs.sha256 }}` |" >> $GITHUB_STEP_SUMMARY
+            echo "| **MD5** | `${{ steps.checksum.outputs.md5 }}` |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "[View Release](https://github.com/og-py3/mint-arch-linux/releases/tag/${{ steps.version.outputs.tag }})" >> $GITHUB_STEP_SUMMARY
+  
