@@ -1,8 +1,8 @@
 [Unit]
-Description=Mint Arch Linux — GitHub Auto Updater
-After=network-online.target
+Description=Mint Arch Linux — GitHub & Package Auto Updater
+Documentation=https://github.com/og-py3/mint-arch-linux
+After=network-online.target nss-lookup.target time-sync.target
 Wants=network-online.target
-After=nss-lookup.target
 
 [Service]
 Type=oneshot
@@ -10,7 +10,8 @@ ExecStart=/usr/local/bin/mint-autoupdate
 RemainAfterExit=no
 StandardOutput=journal
 StandardError=journal
-TimeoutStartSec=120
+TimeoutStartSec=300
+User=root
 
 [Install]
 WantedBy=multi-user.target
