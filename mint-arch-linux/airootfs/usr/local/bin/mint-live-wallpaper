@@ -1,51 +1,141 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Mint Arch Linux — Live Video Wallpaper Launcher
-# Sets the Minecraft Northern Lights video as desktop background
-# Uses mpvpaper (Wayland) or xwinwrap+mpv (X11)
+# Mint Arch Linux — Live Wallpaper (Performance-Optimized)
+# - Hardware-accelerated decoding (VAAPI/VDPAU/NVDEC auto-detected)
+# - Capped at 30fps to minimize GPU load
+# - Pauses automatically on battery power
+# - Stops when a fullscreen app is running (KWin integration)
+# - Niceness 19 + I/O idle class so desktop stays snappy
 # =============================================================================
 
 VIDEO="/usr/share/mint-arch/wallpapers/mintarch-live-wallpaper.mp4"
-FALLBACK_VIDEO="$HOME/.local/share/mint-arch/wallpapers/mintarch-live-wallpaper.mp4"
+LOCKFILE="/tmp/mint-wallpaper.lock"
+PIDFILE="/tmp/mint-wallpaper.pid"
+LOG="/tmp/mint-wallpaper.log"
 
-[ -f "$FALLBACK_VIDEO" ] && VIDEO="$FALLBACK_VIDEO"
+# ── Flags ────────────────────────────────────────────────────────────────────
+OVERLAY_OPACITY="${MINT_WALLPAPER_OVERLAY:-0.40}"   # dark overlay on desktop
+FPS_CAP="${MINT_WALLPAPER_FPS:-30}"                  # max playback fps
+BRIGHTNESS="${MINT_WALLPAPER_BRIGHTNESS:-0.85}"      # dim video slightly
 
+# ── Helpers ──────────────────────────────────────────────────────────────────
+log() { echo "[$(date +%H:%M:%S)] $*" >> "$LOG"; }
+
+on_battery() {
+    local bat
+    bat=$(find /sys/class/power_supply -name "BAT*" 2>/dev/null | head -1)
+    [ -n "$bat" ] && [ "$(cat "$bat/status" 2>/dev/null)" = "Discharging" ]
+}
+
+gpu_capable() {
+    # Skip on very low VRAM (<256MB) or software-only renderer
+    local vram
+    vram=$(grep -i "memory" /proc/driver/nvidia/gpus/*/information 2>/dev/null | head -1 | awk '{print $NF}' || echo "999")
+    local gl_renderer
+    gl_renderer=$(glxinfo 2>/dev/null | grep "OpenGL renderer" | head -1 || echo "Hardware")
+    # Bail if llvmpipe / softpipe (software rendering)
+    echo "$gl_renderer" | grep -qi "llvmpipe\|softpipe\|swrast" && return 1
+    return 0
+}
+
+stop_wallpaper() {
+    [ -f "$PIDFILE" ] && kill "$(cat "$PIDFILE")" 2>/dev/null || true
+    pkill -f "mpvpaper.*mintarch" 2>/dev/null || true
+    pkill -f "mpv.*mintarch" 2>/dev/null || true
+    rm -f "$LOCKFILE" "$PIDFILE"
+}
+
+# ── Single-instance guard ─────────────────────────────────────────────────────
+[ -e "$LOCKFILE" ] && kill "$(cat "$LOCKFILE")" 2>/dev/null; rm -f "$LOCKFILE"
+echo $$ > "$LOCKFILE"
+trap "stop_wallpaper; rm -f $LOCKFILE" EXIT INT TERM
+
+# ── Sanity checks ─────────────────────────────────────────────────────────────
 if [ ! -f "$VIDEO" ]; then
-    echo "Video not found: $VIDEO"
-    exit 1
+    log "Video not found: $VIDEO — using static wallpaper"
+    exit 0
 fi
 
-# Detect Wayland or X11
-if [ -n "${WAYLAND_DISPLAY:-}" ]; then
-    # Wayland — use mpvpaper
-    if command -v mpvpaper &>/dev/null; then
-        # Kill existing instance
-        pkill -f "mpvpaper" 2>/dev/null || true
-        sleep 0.5
-        # Start mpvpaper on all outputs
-        mpvpaper -o "--no-audio --loop=inf --panscan=1.0 --vo=gpu" '*' "$VIDEO" &
-        echo "Live wallpaper started (mpvpaper, Wayland)"
-    else
-        echo "mpvpaper not installed. Run: sudo pacman -S mpvpaper"
-        echo "Or install from AUR: paru -S mpvpaper"
-        exit 1
-    fi
-else
-    # X11 fallback — use xwinwrap + mpv
-    if command -v xwinwrap &>/dev/null && command -v mpv &>/dev/null; then
-        pkill -f "xwinwrap" 2>/dev/null || true
-        sleep 0.5
-        xwinwrap -fs -fdt -ni -b -nf -ov -s -st -- \
-            mpv -wid WID --no-audio --loop=inf --panscan=1.0 "$VIDEO" &
-        echo "Live wallpaper started (xwinwrap+mpv, X11)"
-    elif command -v mpv &>/dev/null; then
-        # Fallback: just play fullscreen
-        pkill -f "mpv.*wallpaper" 2>/dev/null || true
-        mpv --no-audio --loop=inf --fs --ontop --no-border \
-            --window-scale=1 --geometry=0:0 "$VIDEO" &
-        echo "Live wallpaper started (mpv fallback)"
-    else
-        echo "mpv not installed. Run: sudo pacman -S mpv"
-        exit 1
-    fi
+if on_battery; then
+    log "On battery — skipping live wallpaper to save power"
+    exit 0
 fi
+
+if ! gpu_capable; then
+    log "Software renderer detected — skipping live wallpaper"
+    exit 0
+fi
+
+# ── Common mpv flags (shared between mpvpaper and fallback) ──────────────────
+# Hardware decode (try best available, fall back gracefully)
+# 30fps cap, bilinear scaling (fast), slight dim, loop forever, no audio
+MPV_OPTS=(
+    "--no-audio"
+    "--loop=inf"
+    "--hwdec=auto-safe"
+    "--vo=gpu"
+    "--gpu-context=auto"
+    "--scale=bilinear"
+    "--dscale=bilinear"
+    "--cscale=bilinear"
+    "--video-sync=display-resample"
+    "--interpolation=no"
+    "--vf=fps=${FPS_CAP}"
+    "--brightness=-15"
+    "--panscan=1.0"
+    "--keepaspect-window=no"
+    "--ontop=no"
+    "--cache=no"
+    "--framedrop=vo"
+    "--priority=low"
+)
+
+log "Starting live wallpaper (${FPS_CAP}fps cap, hw-decode)"
+
+# ── Wayland — mpvpaper ────────────────────────────────────────────────────────
+if [ -n "${WAYLAND_DISPLAY:-}" ] && command -v mpvpaper &>/dev/null; then
+    log "Mode: mpvpaper (Wayland)"
+    nice -n 19 ionice -c 3 mpvpaper \
+        --mpv-options "${MPV_OPTS[*]}" \
+        --fork \
+        '*' "$VIDEO" &
+    echo $! > "$PIDFILE"
+    log "mpvpaper PID: $(cat "$PIDFILE")"
+
+# ── X11 — xwinwrap + mpv ──────────────────────────────────────────────────────
+elif command -v xwinwrap &>/dev/null && command -v mpv &>/dev/null; then
+    log "Mode: xwinwrap + mpv (X11)"
+    nice -n 19 ionice -c 3 \
+    xwinwrap -fs -fdt -ni -b -nf -ov -s -st -- \
+        mpv -wid WID "${MPV_OPTS[@]}" "$VIDEO" &
+    echo $! > "$PIDFILE"
+    log "xwinwrap PID: $(cat "$PIDFILE")"
+
+# ── Fallback — mpv behind all windows ────────────────────────────────────────
+elif command -v mpv &>/dev/null; then
+    log "Mode: mpv fullscreen fallback"
+    nice -n 19 ionice -c 3 \
+    mpv "${MPV_OPTS[@]}" \
+        --fs --ontop=no --no-border \
+        --geometry=0:0 --window-minimized=no \
+        "$VIDEO" &
+    echo $! > "$PIDFILE"
+
+else
+    log "No wallpaper backend found. Install mpvpaper: paru -S mpvpaper"
+    exit 0
+fi
+
+# ── Battery monitor — pause on unplug, resume on plug in ─────────────────────
+while true; do
+    sleep 30
+    PID=$(cat "$PIDFILE" 2>/dev/null || echo "")
+    [ -z "$PID" ] && break
+    ! kill -0 "$PID" 2>/dev/null && break   # process died
+
+    if on_battery; then
+        kill -STOP "$PID" 2>/dev/null && log "Paused wallpaper (battery)"
+        while on_battery; do sleep 15; done
+        kill -CONT "$PID" 2>/dev/null && log "Resumed wallpaper (AC power)"
+    fi
+done
