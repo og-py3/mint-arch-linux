@@ -34,48 +34,60 @@ jobs:
       - name: List downloaded files
         run: ls -lh /tmp/iso-download/
 
-      - name: Generate checksums
+      - name: Split ISO and generate checksums
         id: info
         run: |
           ISO=$(ls /tmp/iso-download/mintarch-*.iso 2>/dev/null | head -1)
           if [ -z "$ISO" ]; then
-            echo "ERROR: No ISO found in downloaded artifact" >&2
-            ls -la /tmp/iso-download/ || true
-            exit 1
+            echo "ERROR: No ISO found" >&2; ls -la /tmp/iso-download/ || true; exit 1
           fi
           NAME=$(basename "$ISO")
           SIZE=$(du -sh "$ISO" | cut -f1)
           SHA256=$(sha256sum "$ISO" | cut -d" " -f1)
           MD5=$(md5sum "$ISO" | cut -d" " -f1)
-          echo "iso_name=$NAME" >> $GITHUB_OUTPUT
-          echo "iso_size=$SIZE" >> $GITHUB_OUTPUT
-          echo "sha256=$SHA256" >> $GITHUB_OUTPUT
-          echo "md5=$MD5" >> $GITHUB_OUTPUT
+          echo "iso_name=$NAME"   >> $GITHUB_OUTPUT
+          echo "iso_size=$SIZE"   >> $GITHUB_OUTPUT
+          echo "sha256=$SHA256"   >> $GITHUB_OUTPUT
+          echo "md5=$MD5"         >> $GITHUB_OUTPUT
           echo "$SHA256  $NAME" > /tmp/iso-download/${{ inputs.tag }}-SHA256SUM
           echo "$MD5  $NAME"   > /tmp/iso-download/${{ inputs.tag }}-MD5SUM
-          echo "ISO: $NAME ($SIZE)"
-          echo "SHA256: $SHA256"
+          echo "Splitting $NAME ($SIZE) into 1.9 GB parts..."
+          split -b 1900m "$ISO" "/tmp/iso-download/${NAME}.part"
+          ls -lh /tmp/iso-download/${NAME}.part*
+          printf "#!/usr/bin/env bash\nset -euo pipefail\nISO=\$(ls mintarch-*.iso.partaa 2>/dev/null | sed s/.partaa//)\n[ -z \"$ISO\" ] && echo \"ERROR: no .partaa file found\" && exit 1\necho \"Reassembling $ISO...\"\ncat \${ISO}.part* > \"$ISO\"\nsha256sum -c *-SHA256SUM 2>/dev/null || echo \"verify manually\"\necho \"Done: $ISO (\$(du -sh \"$ISO\" | cut -f1))\"\"\n" > /tmp/iso-download/reassemble.sh
+          chmod +x /tmp/iso-download/reassemble.sh
+          echo "ISO: $NAME ($SIZE) | SHA256: $SHA256"
 
-      - name: Attach ISO to release
+      - name: Delete existing release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view ${{ inputs.tag }} --json assets --jq ".assets[].id" | while read ID; do
+            echo "Deleting asset $ID"
+            curl -sf -X DELETE -H "Authorization: token $GH_TOKEN" \
+              "https://api.github.com/repos/${{ github.repository }}/releases/assets/$ID" || true
+          done
+
+      - name: Attach all parts and checksums to release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.tag }}
           files: |
-            /tmp/iso-download/mintarch-*.iso
+            /tmp/iso-download/mintarch-*.iso.part*
             /tmp/iso-download/${{ inputs.tag }}-SHA256SUM
             /tmp/iso-download/${{ inputs.tag }}-MD5SUM
+            /tmp/iso-download/reassemble.sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Summary
         run: |
-          echo "## ISO attached to release ${{ inputs.tag }}!" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          PARTS=$(ls /tmp/iso-download/mintarch-*.iso.part* | wc -l)
+          echo "## ISO attached to ${{ inputs.tag }}!" >> $GITHUB_STEP_SUMMARY
           echo "| | |" >> $GITHUB_STEP_SUMMARY
           echo "|---|---|" >> $GITHUB_STEP_SUMMARY
           echo "| **ISO** | ${{ steps.info.outputs.iso_name }} |" >> $GITHUB_STEP_SUMMARY
           echo "| **Size** | ${{ steps.info.outputs.iso_size }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Parts** | $PARTS × 1.9 GB |" >> $GITHUB_STEP_SUMMARY
           echo "| **SHA256** | `${{ steps.info.outputs.sha256 }}` |" >> $GITHUB_STEP_SUMMARY
-          echo "| **MD5** | `${{ steps.info.outputs.md5 }}` |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
           echo "[View Release](https://github.com/og-py3/mint-arch-linux/releases/tag/${{ inputs.tag }})" >> $GITHUB_STEP_SUMMARY
