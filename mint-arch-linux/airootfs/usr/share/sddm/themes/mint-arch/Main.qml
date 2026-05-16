@@ -26,11 +26,17 @@ Rectangle {
         fillMode: VideoOutput.PreserveAspectCrop
     }
 
-    // ── Dark overlay ─────────────────────────────────────────────────────────
+    // ── Gradient overlay — darkens bottom/top, leaves middle visible ─────────
     Rectangle {
         anchors.fill: parent
-        color: "#000000"
-        opacity: 0.45
+        color: "transparent"
+        gradient: Gradient {
+            orientation: Gradient.Vertical
+            GradientStop { position: 0.0; color: Qt.rgba(0,0,0,0.55) }
+            GradientStop { position: 0.3; color: Qt.rgba(0,0,0,0.25) }
+            GradientStop { position: 0.6; color: Qt.rgba(0,0,0,0.25) }
+            GradientStop { position: 1.0; color: Qt.rgba(0,0,0,0.65) }
+        }
     }
 
     // ── Frosted glass login card ─────────────────────────────────────────────
