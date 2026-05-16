@@ -1,6 +1,6 @@
 # =============================================================================
-# Mint Arch Linux — Pre-installed Security Tools
-# These are bundled into the ISO at build time (works offline after install)
+# Mint Arch Linux — Pre-installed Security Tools (BlackArch + Arch repos)
+# These are bundled into the ISO at build time (works offline after install).
 # Full BlackArch suite (2800+ tools) available via: sudo mint-tools-setup
 # =============================================================================
 
@@ -13,12 +13,11 @@ whois
 bind
 traceroute
 mtr
-tcptraceroute
 smbmap
 nbtscan
 onesixtyone
 fping
-hping
+hping3
 
 # ── Reconnaissance ───────────────────────────────────────────────────────────
 whatweb
@@ -38,7 +37,6 @@ dirb
 gobuster
 ffuf
 wfuzz
-burpsuite
 zaproxy
 wapiti
 commix
@@ -54,7 +52,6 @@ cewl
 hash-identifier
 pdfcrack
 fcrackzip
-rarcrack
 
 # ── Wireless & WiFi ──────────────────────────────────────────────────────────
 aircrack-ng
@@ -67,15 +64,13 @@ pixiewps
 reaver
 hcxdumptool
 hcxtools
-iw
-wireless_tools
 wavemon
 
 # ── Exploitation ─────────────────────────────────────────────────────────────
 metasploit
 exploitdb
-pwntools
-python-impacket
+python-pwntools
+impacket
 python-pycryptodome
 
 # ── Post-Exploitation ────────────────────────────────────────────────────────
@@ -91,7 +86,6 @@ sleuthkit
 binwalk
 foremost
 testdisk
-photorec
 dc3dd
 ddrescue
 exiftool
@@ -119,17 +113,12 @@ responder
 arpwatch
 mitmproxy
 sslstrip
-netsed
 
 # ── Network Tools ────────────────────────────────────────────────────────────
-ncat
-netcat
 socat
 proxychains-ng
 tor
 torsocks
-openvpn
-wireguard-tools
 sslscan
 openssl
 gnutls-utils
@@ -147,26 +136,24 @@ recon-ng
 sherlock
 spiderfoot
 
-# ── Social Engineering ───────────────────────────────────────────────────────
+# ── Social Engineering ────────────────────────────────────────────────────────
 set
 
 # ── Fuzzing ──────────────────────────────────────────────────────────────────
 radamsa
-american-fuzzy-lop
+afl
 
 # ── Container Security ───────────────────────────────────────────────────────
 trivy
 dive
 grype
 syft
-hadolint
 
 # ── Mobile Security ──────────────────────────────────────────────────────────
 apktool
 dex2jar
 jadx
-adb
-fastboot
+android-tools
 androguard
 
 # ── Defensive & Monitoring ───────────────────────────────────────────────────
@@ -176,17 +163,14 @@ rkhunter
 chkrootkit
 lynis
 clamav
-auditd
 aide
 
 # ── Malware Analysis ─────────────────────────────────────────────────────────
 yara
-python-yara
 
 # ── Firmware Analysis ────────────────────────────────────────────────────────
 binwalk
 flashrom
-esptool
 
 # ── Wordlists & Resources ────────────────────────────────────────────────────
 wordlistctl
