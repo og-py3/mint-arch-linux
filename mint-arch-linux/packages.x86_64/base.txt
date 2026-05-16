@@ -63,7 +63,6 @@ nano
 networkmanager
 network-manager-applet
 wpa_supplicant
-wireless-tools
 iw
 iwd
 dhcpcd
@@ -80,7 +79,6 @@ wireguard-tools
 # System tools
 htop
 btop
-neofetch
 fastfetch
 lsof
 strace
@@ -109,7 +107,6 @@ xz
 p7zip
 zstd
 lz4
-unar
 
 # Security
 apparmor
