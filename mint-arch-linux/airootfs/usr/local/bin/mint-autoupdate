@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+# =============================================================================
+# Mint Arch Linux — Auto Updater
+# Checks GitHub on boot and applies updates automatically
+# =============================================================================
+
+set -euo pipefail
+
+REPO="og-py3/mint-arch-linux"
+BRANCH="main"
+STATE_FILE="/var/lib/mint-arch/last-commit"
+LOG="/var/log/mint-autoupdate.log"
+INSTALL_DIR="/opt/mint-arch-live"
+MINT='\033[38;2;46;203;113m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m'
+
+mkdir -p /var/lib/mint-arch
+exec > >(tee -a "$LOG") 2>&1
+
+log()  { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
+info() { log "[INFO] $*"; }
+ok()   { log "[OK]   $*"; }
+warn() { log "[WARN] $*"; }
+err()  { log "[ERR]  $*"; }
+
+info "Mint Arch Linux Auto-Updater starting..."
+
+# Check network
+if ! curl -sf --max-time 5 https://api.github.com > /dev/null 2>&1; then
+    warn "No internet connection — skipping update check."
+    exit 0
+fi
+
+# Get latest commit SHA from GitHub
+LATEST=$(curl -sf --max-time 10 \
+    "https://api.github.com/repos/${REPO}/commits/${BRANCH}" \
+    | grep '"sha"' | head -1 | awk -F'"' '{print $4}' || echo "")
+
+if [ -z "$LATEST" ]; then
+    warn "Could not fetch latest commit — skipping."
+    exit 0
+fi
+
+# Read last applied commit
+CURRENT=""
+[ -f "$STATE_FILE" ] && CURRENT=$(cat "$STATE_FILE")
+
+if [ "$CURRENT" = "$LATEST" ]; then
+    info "System is up to date (commit: ${LATEST:0:8})"
+    exit 0
+fi
+
+info "Update available!"
+info "  Current: ${CURRENT:0:8:-"(none)"}"
+info "  Latest:  ${LATEST:0:8}"
+
+# Download and apply updates
+TMPDIR=$(mktemp -d)
+trap "rm -rf $TMPDIR" EXIT
+
+info "Downloading update from GitHub..."
+curl -sfL --max-time 120 \
+    "https://github.com/${REPO}/archive/refs/heads/${BRANCH}.tar.gz" \
+    -o "$TMPDIR/update.tar.gz" || {
+    err "Download failed — skipping update."
+    exit 1
+}
+
+tar -xzf "$TMPDIR/update.tar.gz" -C "$TMPDIR" || {
+    err "Extract failed."
+    exit 1
+}
+
+UPDATE_DIR="$TMPDIR/mint-arch-linux-${BRANCH}"
+
+# Apply mint-* tool updates
+info "Updating mint-* CLI tools..."
+if [ -d "$UPDATE_DIR/mint-arch-linux/airootfs/usr/local/bin" ]; then
+    cp -f "$UPDATE_DIR/mint-arch-linux/airootfs/usr/local/bin"/mint-* /usr/local/bin/ 2>/dev/null || true
+    chmod +x /usr/local/bin/mint-* 2>/dev/null || true
+    ok "mint-* tools updated"
+fi
+
+# Apply config updates (non-destructive — only add, never remove user configs)
+CONFIGS=(
+    "mint-arch-linux/airootfs/etc/motd:/etc/motd"
+)
+for mapping in "${CONFIGS[@]}"; do
+    src="${UPDATE_DIR}/${mapping%%:*}"
+    dst="${mapping##*:}"
+    [ -f "$src" ] && cp -f "$src" "$dst" && info "Updated: $dst"
+done
+
+# Apply wallpaper updates
+if [ -d "$UPDATE_DIR/mint-arch-linux/airootfs/usr/share/mint-arch" ]; then
+    mkdir -p /usr/share/mint-arch
+    cp -ruf "$UPDATE_DIR/mint-arch-linux/airootfs/usr/share/mint-arch/." /usr/share/mint-arch/ 2>/dev/null || true
+    ok "Wallpapers/assets updated"
+fi
+
+# Save new commit as applied
+echo "$LATEST" > "$STATE_FILE"
+ok "Update applied! (commit: ${LATEST:0:8})"
+info "Changes will be fully active on next KDE session restart."
+
+# Notify logged-in user if desktop is running
+DISPLAY_USER=$(who | grep -v root | head -1 | awk '{print $1}' || true)
+if [ -n "$DISPLAY_USER" ]; then
+    sudo -u "$DISPLAY_USER" DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u "$DISPLAY_USER")/bus" \
+        notify-send "Mint Arch Linux Updated" \
+        "System tools updated to $(date +%Y-%m-%d)\nCommit: ${LATEST:0:8}" \
+        --icon=/usr/share/pixmaps/mintarch-logo.png 2>/dev/null || true
+fi
