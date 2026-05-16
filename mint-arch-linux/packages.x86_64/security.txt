@@ -78,7 +78,6 @@ crackmapexec
 evil-winrm
 smbclient
 bloodhound
-neo4j
 
 # ── Forensics & Recovery ─────────────────────────────────────────────────────
 autopsy
@@ -121,7 +120,7 @@ tor
 torsocks
 sslscan
 openssl
-gnutls-utils
+gnutls
 
 # ── Cryptography & Steganography ─────────────────────────────────────────────
 steghide
@@ -163,7 +162,6 @@ rkhunter
 chkrootkit
 lynis
 clamav
-aide
 
 # ── Malware Analysis ─────────────────────────────────────────────────────────
 yara
