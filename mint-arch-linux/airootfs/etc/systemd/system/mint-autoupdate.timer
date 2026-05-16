@@ -1,0 +1,11 @@
+[Unit]
+Description=Mint Arch Linux — Auto Update Timer (daily)
+Requires=mint-autoupdate.service
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=24h
+Persistent=true
+
+[Install]
+WantedBy=timers.target
