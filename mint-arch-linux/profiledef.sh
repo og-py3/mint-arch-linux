@@ -11,10 +11,8 @@ iso_version="$(date +%Y.%m.%d)"
 install_dir="arch"
 buildmodes=('iso')
 bootmodes=(
-    'bios.syslinux.mbr'
-    'bios.syslinux.eltorito'
-    'uefi-x64.systemd-boot.esp'
-    'uefi-x64.systemd-boot.eltorito'
+    'bios.syslinux'
+    'uefi.systemd-boot'
 )
 arch="x86_64"
 pacman_conf="pacman.conf"
@@ -26,7 +24,7 @@ file_permissions=(
   # System security files
   ["/etc/shadow"]="0:0:400"
   ["/etc/gshadow"]="0:0:400"
-  ["/etc/sudoers.d/mintarch"]="0:0:440"
+  ["/etc/sudoers.d/mint"]="0:0:440"
 
   # Mint Arch Linux CLI tools
   ["/usr/local/bin/mint-installer"]="0:0:755"
