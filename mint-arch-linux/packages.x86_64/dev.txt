@@ -55,7 +55,7 @@ ripgrep
 fd
 bat
 eza
-delta
+git-delta
 hyperfine
 tokei
 procs
@@ -89,7 +89,6 @@ yq
 # Android
 android-tools
 adb
-fastboot
 
 # SSH / Remote
 openssh
