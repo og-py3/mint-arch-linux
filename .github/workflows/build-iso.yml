@@ -30,14 +30,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Initialize pacman keyring
+        run: |
+          pacman-key --init
+          pacman-key --populate archlinux
+          pacman -Sy --noconfirm archlinux-keyring
+
       - name: Install build dependencies
         run: |
-          pacman -Sy --noconfirm archlinux-keyring
           pacman -Su --noconfirm
           pacman -S --noconfirm --needed \
             archiso dosfstools e2fsprogs libisoburn \
             squashfs-tools mtools grub efibootmgr \
-            syslinux curl wget
+            syslinux curl wget git
+
+      - name: Set up BlackArch repository
+        run: |
+          curl -fsSL https://blackarch.org/strap.sh -o /tmp/strap.sh
+          chmod +x /tmp/strap.sh
+          bash /tmp/strap.sh || true
+          pacman -Sy --noconfirm 2>/dev/null || true
 
       - name: Set file permissions
         working-directory: mint-arch-linux
@@ -51,12 +63,19 @@ jobs:
         env:
           OUT_DIR: /tmp/output
           CHANNEL: ${{ github.event.inputs.channel || 'stable' }}
-        run: ./build.sh --output /tmp/output
+          CI: "true"
+        run: ./build.sh --output /tmp/output --ci
 
       - name: Get ISO info
         id: iso
         run: |
           ISO=$(ls /tmp/output/mintarch-*.iso 2>/dev/null | head -1)
+          if [ -z "$ISO" ]; then
+            echo "ERROR: No ISO found in /tmp/output" >&2
+            ls -la /tmp/output/ 2>/dev/null || true
+            exit 1
+          fi
+          echo "path=$ISO" >> $GITHUB_OUTPUT
           echo "name=$(basename $ISO)" >> $GITHUB_OUTPUT
           echo "size=$(du -sh $ISO | cut -f1)" >> $GITHUB_OUTPUT
           echo "sha256=$(sha256sum $ISO | cut -d' ' -f1)" >> $GITHUB_OUTPUT
@@ -78,8 +97,7 @@ jobs:
           echo "| **Size** | ${{ steps.iso.outputs.size }} |" >> $GITHUB_STEP_SUMMARY
           echo "| **SHA256** | \`${{ steps.iso.outputs.sha256 }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "To create a release, push a version tag:" >> $GITHUB_STEP_SUMMARY
+          echo "To publish a release, push a version tag:" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "git tag v2025.05" >> $GITHUB_STEP_SUMMARY
-          echo "git push origin v2025.05" >> $GITHUB_STEP_SUMMARY
+          echo "git tag v2025.05 && git push origin v2025.05" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
