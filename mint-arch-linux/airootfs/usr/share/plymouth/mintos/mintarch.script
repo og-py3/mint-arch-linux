@@ -1,3 +1,11 @@
 wallpaper_image = Image("logo.png");
 wallpaper_sprite = Sprite(wallpaper_image);
 wallpaper_sprite.SetZ(-10000);
+
+# Center the logo on screen
+wallpaper_sprite.SetPosition(ScreenWidth/2 - wallpaper_image.GetWidth()/2,
+                             ScreenHeight/2 - wallpaper_image.GetHeight()/2);
+
+# Optional: fade in effect
+wallpaper_sprite.SetOpacity(0.0);
+wallpaper_sprite.FadeIn(2.0);   # 2 seconds fade
